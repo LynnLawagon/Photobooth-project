@@ -1,16 +1,14 @@
 # Photobooth Project
 
-A modern, web-based photobooth application that allows users to capture photos with a countdown timer, apply custom backgrounds, and automatically save images to a local gallery.
+A modern, web-based photobooth application that allows users to capture photos with a countdown timer and automatically save images to a local gallery.
 
 ## ✨ Features
 
 - **Live Camera Feed**: Real-time video capture with automatic horizontal flip correction
 - **Countdown Timer**: Optional countdown before photo capture (1-60 seconds)
-- **Custom Background**: Color picker to change the video background
 - **Automatic Saving**: Photos are automatically saved to a local gallery folder
 - **Download Functionality**: Download individual photos with timestamped filenames
 - **Responsive Design**: Modern, mobile-friendly interface with gradient backgrounds
-- **Gallery Display**: Horizontal layout of captured photos with download buttons
 
 ## 🚀 Quick Start
 
@@ -60,7 +58,6 @@ A modern, web-based photobooth application that allows users to capture photos w
 
 ### Advanced Features
 
-- **Background Color**: Use the color picker to change the video background
 - **Timer**: Set a countdown delay before photo capture
 - **Download**: Click the "Save & Download" button under each photo to:
   - Automatically save to the `gallery/` folder
@@ -90,7 +87,7 @@ photobooth-project/
 ### Frontend
 - **HTML5**: Semantic markup and video element
 - **CSS3**: Modern styling with gradients, flexbox, and animations
-- **JavaScript (ES6+)**: Camera API, canvas manipulation, async/await
+- **JavaScript (ES6+)**: Camera API, async/await
 
 ### Backend
 - **Node.js**: JavaScript runtime
