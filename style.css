@@ -6,7 +6,7 @@
 
 body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+    background: linear-gradient(135deg, #cfa961 0%, #ae964e 100%);
     min-height: 100vh;
     color: white;
 }
@@ -78,7 +78,7 @@ h1 {
 }
 
 #capture-btn {
-    background: linear-gradient(45deg, #FF6B6B, #FF8E8E);
+    background: linear-gradient(45deg, #4CAF50, #45a049);
     color: white;
 }
 
@@ -88,7 +88,7 @@ h1 {
 }
 
 #select-all-btn {
-    background: linear-gradient(45deg, #4ECDC4, #44A08D);
+    background: linear-gradient(45deg, #4CAF50, #45a049);
     color: white;
 }
 
