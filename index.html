@@ -7,18 +7,24 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-
     <div class="container">
-        <h1>Smile!</h1>
-
-        <video autoplay id="video"></video>
-
-        <div class="controls">
-            <input type="number" min="0" placeholder="Timer (sec)" id="timer">
-            <button id="capture-btn" type="button">Capture</button>
+        <h1>📸 Photobooth</h1>
+        
+        <div class="camera-section">
+            <video id="video" autoplay muted playsinline></video>
+            
+            <div class="controls">
+                <input type="number" id="timer" placeholder="-" min="0" max="10" value="0">
+                <button id="capture-btn">⭐ Capture</button>
+                <!-- Select All button will be added by JS -->
+            </div>
         </div>
-
-        <div id="gallery"></div>
+        
+        <div class="gallery-section">
+            <h3>Gallery</h3>
+            <div id="gallery"></div>
+            <!-- Batch save button will be added by JS -->
+        </div>
     </div>
 
     <script src="script.js"></script>
