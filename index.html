@@ -7,14 +7,19 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container"></div>
-    <h1>Smile!</h1>
-    <video autoplay id = "video"></video>
-    <div class="controls">
-        <input type="number" min="0" placeholder="Timer (sec)" id="timer">
-        <button id="capture-btn">Capture</button>
+
+    <div class="container">
+        <h1>Smile!</h1>
+
+        <video autoplay id="video"></video>
+
+        <div class="controls">
+            <input type="number" min="0" placeholder="Timer (sec)" id="timer">
+            <button id="capture-btn" type="button">Capture</button>
+        </div>
+
+        <div id="gallery"></div>
     </div>
-    <div id ="gallery"></div>
 
     <script src="script.js"></script>
 </body>

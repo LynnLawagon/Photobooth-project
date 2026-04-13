@@ -3,94 +3,110 @@ var captureBTN = document.getElementById("capture-btn");
 var gallery = document.getElementById("gallery");
 var timer = document.getElementById("timer");
 
-//camera access
-navigator.mediaDevices.getUserMedia({ 
-    video: true 
-}).then((stream) => {
+// CAMERA ACCESS
+navigator.mediaDevices.getUserMedia({ video: true })
+.then((stream) => {
     video.srcObject = stream;
     video.play();
-}).catch((error) => {
-    console.error("Error accessing camera:", error);
-    alert("Camera access denied or not available. Please allow camera permissions and try again.");
+})
+.catch((error) => {
+    console.error("Camera error:", error);
+    alert("Camera access denied or not available.");
 });
 
+// CAPTURE BUTTON
 captureBTN.addEventListener("click", () => {
     var timerValue = parseInt(timer.value) || 0;
-    
+
     if (timerValue > 0) {
-        // Start countdown
         captureBTN.disabled = true;
         timer.disabled = true;
-        
+
         var countdown = timerValue;
         timer.value = countdown;
-        
-        var countdownInterval = setInterval(() => {
+
+        var interval = setInterval(() => {
             countdown--;
             timer.value = countdown;
-            
+
             if (countdown <= 0) {
-                clearInterval(countdownInterval);
+                clearInterval(interval);
                 capturePhoto();
                 captureBTN.disabled = false;
                 timer.disabled = false;
             }
         }, 1000);
     } else {
-        // No timer, capture immediately
         capturePhoto();
     }
 });
 
+// CAPTURE FUNCTION
 function capturePhoto() {
-    //create canvas element
+
     var canvas = document.createElement("canvas");
     canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;      
-    var context = canvas.getContext("2d");
-    
-    // Flip horizontally to match the video display
-    context.scale(-1, 1);
-    context.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
-    
+    canvas.height = video.videoHeight;
+
+    var ctx = canvas.getContext("2d");
+
+    // mirror camera
+    ctx.scale(-1, 1);
+    ctx.drawImage(video, -canvas.width, 0, canvas.width, canvas.height);
+
     var imageData = canvas.toDataURL("image/png");
-    
-    // Create photo container
+
+    // UI container
     var photoContainer = document.createElement("div");
     photoContainer.className = "photo-item";
-    
-    //create image element
+
     var img = document.createElement("img");
     img.src = imageData;
-    
-    // Create download button
+
     var downloadBtn = document.createElement("button");
+    downloadBtn.textContent = "Save & Download";
     downloadBtn.className = "download-btn";
-    downloadBtn.textContent = "Download";
-    downloadBtn.addEventListener("click", function() {
-        // Create formatted date/time for filename
-        var now = new Date();
-        var dateString = now.getFullYear() + '-' + 
-                        String(now.getMonth() + 1).padStart(2, '0') + '-' + 
-                        String(now.getDate()).padStart(2, '0') + '_' +
-                        String(now.getHours()).padStart(2, '0') + '-' +
-                        String(now.getMinutes()).padStart(2, '0') + '-' +
-                        String(now.getSeconds()).padStart(2, '0');
-        
+
+    downloadBtn.addEventListener("click", async function () {
+        var filename = "photobooth_" + Date.now() + ".png";
+
+        // Save the image into the local gallery folder via backend
+        try {
+            const res = await fetch("http://localhost:3000/save-image", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    image: imageData,
+                    filename: filename
+                })
+            });
+
+            const data = await res.json();
+            if (!data.success) {
+                throw new Error(data.message || "Save failed");
+            }
+            console.log("Saved to gallery:", data.path || data.filename);
+        } catch (err) {
+            console.error(err);
+            alert("Unable to save image to gallery. Make sure the server is running.");
+        }
+
+        // Trigger browser download too
         var link = document.createElement("a");
-        link.download = "photobooth_" + dateString + ".png";
+        link.download = filename;
         link.href = imageData;
+        link.style.display = "none";
+        document.body.appendChild(link);
         link.click();
+        document.body.removeChild(link);
     });
-    
-    // Add image and download button to container
+
     photoContainer.appendChild(img);
     photoContainer.appendChild(downloadBtn);
     gallery.appendChild(photoContainer);
-    
-    //timer
-    timer.value = "Photo Captured!";
-    setTimeout(() => {
-        timer.value = "";
-    }, 2000);
+
+    timer.value = "Captured!";
+    setTimeout(() => timer.value = "", 2000);
 }
