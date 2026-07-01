@@ -1,173 +1,105 @@
 # Photobooth Project
 
-A modern, web-based photobooth application that allows users to capture photos with a countdown timer and automatically save images to a local gallery.
+A modern, web-based photobooth application with live camera capture, filters, photo strips, and a server-backed gallery.
 
-## ✨ Features
+## Features
 
-- **Live Camera Feed**: Real-time video capture with automatic horizontal flip correction
-- **Countdown Timer**: Optional countdown before photo capture (1-60 seconds)
-- **Automatic Saving**: Photos are automatically saved to a local gallery folder
-- **Download Functionality**: Download individual photos with timestamped filenames
-- **Responsive Design**: Modern, mobile-friendly interface with gradient backgrounds
+- **Live Camera Feed** — Real-time video with mirror correction and camera switching
+- **Countdown Timer** — Visual overlay countdown (0–60 seconds) before capture
+- **Photo Strip Mode** — Capture 4 shots and combine them into a classic vertical strip
+- **Filters** — Black & white and sepia applied at capture time
+- **Flash & Shutter Sound** — Photobooth-style feedback on every shot
+- **Session Gallery** — Preview, select, delete, and batch-save photos before committing
+- **Server Gallery** — Browse, download, and delete photos saved to disk
+- **Fullscreen Mode** — Kiosk-friendly fullscreen toggle
+- **Responsive Design** — Works on desktop and mobile
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 
-- **Node.js** (version 14 or higher)
-- **npm** (comes with Node.js)
-- **Webcam** (built-in or external)
-- **Modern web browser** (Chrome, Firefox, Safari, Edge)
+- Node.js 14+
+- A webcam
+- A modern browser (Chrome, Firefox, Safari, Edge)
 
 ### Installation
 
-1. **Clone or download** the project files to your local machine
+```bash
+cd "Photobooth project"
+npm install
+```
 
-2. **Navigate to the project directory**:
-   ```bash
-   cd "C:\Users\USER\Web development\Photobooth project"
-   ```
+### Running
 
-3. **Install dependencies**:
-   ```bash
-   npm install
-   ```
+```bash
+npm start
+```
 
-### Running the Application
+Open **http://localhost:3000** in your browser and allow camera access when prompted.
 
-1. **Start the server**:
-   ```bash
-   npm start
-   ```
+## How to Use
 
-2. **Open your browser** and navigate to:
-   ```
-   http://localhost:3000
-   ```
+### Single Photo
 
-3. **Allow camera permissions** when prompted by your browser
+1. Choose a camera and optional filter
+2. Set the timer (seconds before capture; use `0` for instant)
+3. Click **Capture**
 
-## 📖 How to Use
+### Photo Strip
 
-### Basic Photo Capture
+1. Set the timer (delay between each of the 4 shots)
+2. Click **Photo Strip**
+3. Strike a pose for each countdown — all 4 photos are merged into one strip
 
-1. **Allow camera access** when the page loads
-2. **Position yourself** in front of the camera
-3. **Click "Capture"** to take an immediate photo, or:
-4. **Enter a timer value** (in seconds) and click "Capture" for a countdown
+### Saving Photos
 
-### Advanced Features
+- **Save & Download** on any session photo saves to the server `gallery/` folder and downloads locally
+- Check multiple photos and use **Save Selected Images** for batch save + download
+- Saved photos appear in the **Saved on Server** section below
 
-- **Timer**: Set a countdown delay before photo capture
-- **Download**: Click the "Save & Download" button under each photo to:
-  - Automatically save to the `gallery/` folder
-  - Download the image to your downloads folder
-
-### Photo Storage
-
-- Photos are automatically saved to: `gallery/photobooth_[timestamp].png`
-- Each photo gets a unique timestamp filename
-- Gallery folder is created automatically if it doesn't exist
-
-## 🏗️ Project Structure
+## Project Structure
 
 ```
 photobooth-project/
-├── index.html          # Main HTML interface
-├── style.css           # Styling and layout
-├── script.js           # Frontend JavaScript logic
-├── server.js           # Node.js/Express backend server
-├── package.json        # Project dependencies and scripts
-├── gallery/            # Auto-created folder for saved photos
-└── node_modules/       # Installed dependencies
+├── index.html       # Main UI
+├── style.css        # Styles
+├── script.js        # Frontend logic
+├── server.js        # Express server (static files + API)
+├── package.json
+└── gallery/         # Saved photos (auto-created)
 ```
 
-## 🛠️ Technologies Used
+## API Endpoints
 
-### Frontend
-- **HTML5**: Semantic markup and video element
-- **CSS3**: Modern styling with gradients, flexbox, and animations
-- **JavaScript (ES6+)**: Camera API, async/await
+| Method | Path | Description |
+|--------|------|-------------|
+| `POST` | `/save-image` | Save a base64 image to gallery |
+| `GET`  | `/api/gallery` | List saved images |
+| `DELETE` | `/api/gallery/:filename` | Delete a saved image |
+| `GET`  | `/gallery/:filename` | Serve a saved image file |
 
-### Backend
-- **Node.js**: JavaScript runtime
-- **Express.js**: Web framework for the server
-- **CORS**: Cross-origin resource sharing
-- **File System**: Local file saving
+## Configuration
 
-### APIs Used
-- **MediaDevices API**: Camera access
-- **Canvas API**: Image processing and export
-- **Fetch API**: Server communication
+Change the port via environment variable:
 
-## 🔧 Configuration
+```bash
+PORT=8080 npm start
+```
 
-### Server Settings
-
-The server runs on `http://localhost:3000` by default. You can modify the port in `server.js`:
+Or edit `server.js`:
 
 ```javascript
-const PORT = 3000; // Change this to your preferred port
+const PORT = process.env.PORT || 3000;
 ```
 
-### Gallery Path
+## Troubleshooting
 
-Photos are saved to the `gallery/` folder relative to the project root. The path is defined in `server.js`:
+**Camera not working** — Check browser permissions; ensure no other app is using the webcam.
 
-```javascript
-const galleryPath = path.join(__dirname, "gallery");
-```
+**Save failed** — Make sure `npm start` is running and you're accessing the app at `http://localhost:3000` (not as a local file).
 
-## 🐛 Troubleshooting
+**Port in use** — Set a different `PORT` environment variable.
 
-### Camera Not Working
-- **Check permissions**: Ensure you've allowed camera access in your browser
-- **HTTPS requirement**: Some browsers require HTTPS for camera access
-- **Camera availability**: Make sure no other applications are using the camera
+## License
 
-### Server Not Starting
-- **Port in use**: Try changing the port number in `server.js`
-- **Dependencies**: Run `npm install` to ensure all packages are installed
-- **Node version**: Ensure you're using Node.js version 14 or higher
-
-### Photos Not Saving
-- **Server running**: Make sure the backend server is running (`npm start`)
-- **Permissions**: Ensure the application has write permissions to the gallery folder
-- **Console errors**: Check browser console and terminal for error messages
-
-## 📝 Development
-
-### Adding New Features
-
-1. **Frontend changes**: Modify `script.js` for new functionality
-2. **Styling updates**: Edit `style.css` for visual changes
-3. **Backend features**: Update `server.js` for server-side logic
-
-### Building for Production
-
-The application is designed for local use. For production deployment:
-
-1. Set up a proper web server (nginx, Apache)
-2. Configure HTTPS certificates
-3. Set up proper file permissions
-4. Consider using a database for photo management
-
-## 📄 License
-
-This project is licensed under the ISC License.
-
-## 🤝 Contributing
-
-Feel free to fork this project and submit pull requests with improvements!
-
-## 📞 Support
-
-If you encounter any issues:
-1. Check the troubleshooting section above
-2. Verify all prerequisites are met
-3. Check browser console for error messages
-4. Ensure the server is running and accessible
-
----
-
-**Happy photographing! 📸**
+ISC

@@ -7,23 +7,83 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
+    <div id="flash-overlay" aria-hidden="true"></div>
+
     <div class="container">
-        <h1>📸 Photobooth</h1>
-        
+        <header class="app-header">
+            <h1>📸 Photobooth</h1>
+            <button id="fullscreen-btn" class="icon-btn" title="Toggle fullscreen">⛶</button>
+        </header>
+
         <div class="camera-section">
-            <video id="video" autoplay muted playsinline></video>
-            
+            <div class="video-wrapper">
+                <video id="video" autoplay muted playsinline></video>
+                <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="polite">
+                    <span id="countdown-number"></span>
+                </div>
+            </div>
+
+            <div class="camera-options">
+                <label class="option-label">
+                    Camera
+                    <select id="camera-select">
+                        <option value="">Loading cameras...</option>
+                    </select>
+                </label>
+                <label class="option-label">
+                    Filter
+                    <select id="filter-select">
+                        <option value="none">No Filter</option>
+                        <option value="grayscale">Black &amp; White</option>
+                        <option value="sepia">Sepia</option>
+                    </select>
+                </label>
+            </div>
+
+            <div class="strip-layout-section">
+                <p class="strip-layout-label">Photo Strip Layout</p>
+                <div id="strip-layout-picker" class="strip-layout-picker">
+                    <button type="button" class="strip-option active" data-layout="vertical-4" title="4 photos stacked vertically">
+                        <span class="strip-preview strip-preview-vertical-4"></span>
+                        <span>Vertical 4</span>
+                    </button>
+                    <button type="button" class="strip-option" data-layout="horizontal-4" title="4 photos in a row">
+                        <span class="strip-preview strip-preview-horizontal-4"></span>
+                        <span>Horizontal 4</span>
+                    </button>
+                    <button type="button" class="strip-option" data-layout="grid-2x2" title="4 photos in a 2×2 grid">
+                        <span class="strip-preview strip-preview-grid-2x2"></span>
+                        <span>2×2 Grid</span>
+                    </button>
+                    <button type="button" class="strip-option" data-layout="vertical-3" title="3 photos stacked vertically">
+                        <span class="strip-preview strip-preview-vertical-3"></span>
+                        <span>Vertical 3</span>
+                    </button>
+                    <button type="button" class="strip-option" data-layout="horizontal-3" title="3 photos in a row">
+                        <span class="strip-preview strip-preview-horizontal-3"></span>
+                        <span>Horizontal 3</span>
+                    </button>
+                </div>
+            </div>
+
             <div class="controls">
-                <input type="number" id="timer" placeholder="-" min="0" max="10" value="0">
-                <button id="capture-btn">⭐ Capture</button>
-                <!-- Select All button will be added by JS -->
+                <label class="timer-label">
+                    Timer (sec)
+                    <input type="number" id="timer" min="0" max="60" value="3" placeholder="0">
+                </label>
+                <button id="capture-btn" class="btn btn-primary">⭐ Capture</button>
+                <button id="strip-btn" class="btn btn-secondary">🎞️ Start Strip</button>
             </div>
         </div>
-        
+
         <div class="gallery-section">
-            <h3>Gallery</h3>
+            <div class="section-header">
+                <h3>Session Gallery</h3>
+                <button id="select-all-btn" class="btn btn-small">Select All</button>
+            </div>
+            <p id="session-empty" class="empty-message">No photos yet — capture one to get started!</p>
             <div id="gallery"></div>
-            <!-- Batch save button will be added by JS -->
+            <button id="batch-save-btn" class="batch-save-btn hidden">💾 Save Selected Images</button>
         </div>
     </div>
 
