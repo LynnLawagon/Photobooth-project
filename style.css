@@ -66,24 +66,20 @@ h1 {
     position: relative;
     max-width: 640px;
     margin: 0 auto 20px;
+    aspect-ratio: 3 / 4;
+    transition: aspect-ratio 0.3s ease;
+    border-radius: 15px;
+    overflow: hidden;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
 }
 
 #video {
     width: 100%;
-    height: auto;
+    height: 100%;
     display: block;
-    border-radius: 15px;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    object-fit: cover;
     transform: scaleX(-1);
     transition: filter 0.2s ease;
-}
-
-#video.filter-grayscale {
-    filter: grayscale(100%);
-}
-
-#video.filter-sepia {
-    filter: sepia(100%);
 }
 
 /* Countdown overlay */
@@ -275,6 +271,89 @@ h1 {
     background-position: 6% center, 50% center, 94% center;
 }
 
+/* Stickers */
+.stickers-section {
+    margin-bottom: 20px;
+}
+
+.stickers-section .section-header {
+    margin-bottom: 12px;
+}
+
+.stickers-section .strip-layout-label {
+    margin-bottom: 0;
+}
+
+.sticker-palette {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.sticker-option {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.15);
+    border: 2px solid transparent;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.sticker-option:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.3);
+    transform: translateY(-2px);
+}
+
+.sticker-option:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.sticker-layer {
+    position: absolute;
+    inset: 0;
+    z-index: 6;
+    pointer-events: none;
+}
+
+.sticker {
+    position: absolute;
+    transform: translate(-50%, -50%);
+    line-height: 1;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+    pointer-events: auto;
+    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.35));
+}
+
+.sticker.dragging {
+    cursor: grabbing;
+}
+
+.sticker-remove {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: rgba(255, 71, 87, 0.9);
+    color: white;
+    font-size: 13px;
+    line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
 /* Controls */
 .controls {
     display: flex;
@@ -362,10 +441,6 @@ h1 {
     margin-bottom: 30px;
 }
 
-.saved-section {
-    margin-bottom: 0;
-}
-
 .section-header {
     display: flex;
     justify-content: space-between;
@@ -390,8 +465,7 @@ h1 {
     display: none;
 }
 
-#gallery,
-#server-gallery {
+#gallery {
     display: grid;
     grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
     gap: 20px;
@@ -478,38 +552,6 @@ h1 {
     cursor: not-allowed;
 }
 
-.photo-meta {
-    padding: 8px 12px;
-    font-size: 0.8em;
-    color: #666;
-    background: #f5f5f5;
-}
-
-.photo-actions {
-    display: flex;
-}
-
-.photo-actions .download-btn {
-    flex: 1;
-    border-radius: 0;
-}
-
-.delete-server-btn {
-    flex: 1;
-    padding: 12px;
-    background: #ff4757;
-    color: white;
-    border: none;
-    font-size: 14px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background 0.2s;
-}
-
-.delete-server-btn:hover {
-    background: #e84118;
-}
-
 .batch-save-btn {
     display: block;
     width: 100%;
@@ -584,8 +626,13 @@ h1 {
         font-size: 4rem;
     }
 
-    #gallery,
-    #server-gallery {
+    #gallery {
         grid-template-columns: 1fr;
+    }
+
+    .sticker-option {
+        width: 42px;
+        height: 42px;
+        font-size: 1.3em;
     }
 }

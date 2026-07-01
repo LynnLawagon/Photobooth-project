@@ -1,9 +1,9 @@
 // DOM Elements
 const video = document.getElementById("video");
+const videoWrapper = document.querySelector(".video-wrapper");
 const captureBtn = document.getElementById("capture-btn");
 const stripBtn = document.getElementById("strip-btn");
 const gallery = document.getElementById("gallery");
-const serverGallery = document.getElementById("server-gallery");
 const timerInput = document.getElementById("timer");
 const cameraSelect = document.getElementById("camera-select");
 const filterSelect = document.getElementById("filter-select");
@@ -13,14 +13,17 @@ const countdownNumber = document.getElementById("countdown-number");
 const flashOverlay = document.getElementById("flash-overlay");
 const selectAllBtn = document.getElementById("select-all-btn");
 const batchSaveBtn = document.getElementById("batch-save-btn");
-const refreshServerBtn = document.getElementById("refresh-server-btn");
 const fullscreenBtn = document.getElementById("fullscreen-btn");
 const sessionEmpty = document.getElementById("session-empty");
-const serverEmpty = document.getElementById("server-empty");
+const stickerLayer = document.getElementById("sticker-layer");
+const stickerPalette = document.getElementById("sticker-palette");
+const clearStickersBtn = document.getElementById("clear-stickers-btn");
 
 let currentStream = null;
 let isCapturing = false;
 let selectedStripLayout = "vertical-4";
+let stickerIdCounter = 0;
+const stickers = []; // { id, emoji, xPercent, yPercent, sizePercent, el }
 
 const STRIP_LAYOUTS = {
     "vertical-4":   { shots: 4, cols: 1, rows: 4, label: "Vertical 4" },
@@ -28,6 +31,29 @@ const STRIP_LAYOUTS = {
     "grid-2x2":     { shots: 4, cols: 2, rows: 2, label: "2×2 Grid" },
     "vertical-3":   { shots: 3, cols: 1, rows: 3, label: "Vertical 3" },
     "horizontal-3": { shots: 3, cols: 3, rows: 1, label: "Horizontal 3" }
+};
+
+// width / height for the camera preview + capture crop, per layout
+const LAYOUT_ASPECT = {
+    "vertical-4":   3 / 4,
+    "vertical-3":   3 / 4,
+    "horizontal-4": 4 / 3,
+    "horizontal-3": 4 / 3,
+    "grid-2x2":     1
+};
+
+// Aesthetic filters. `css` is used as both the live-preview CSS filter and
+// the canvas 2D context filter at capture time, so preview always matches output.
+const FILTERS = {
+    none:     { css: "" },
+    grayscale:{ css: "grayscale(100%)" },
+    sepia:    { css: "sepia(100%)" },
+    noir:     { css: "grayscale(100%) contrast(140%) brightness(85%)", vignette: 0.45 },
+    vintage:  { css: "sepia(55%) saturate(75%) contrast(90%) brightness(105%)", vignette: 0.3 },
+    vivid:    { css: "saturate(165%) contrast(115%) brightness(105%)" },
+    cool:     { css: "saturate(115%) hue-rotate(15deg) brightness(105%)" },
+    warm:     { css: "saturate(120%) sepia(18%) brightness(108%)" },
+    dreamy:   { css: "contrast(85%) brightness(112%) saturate(80%) blur(0.5px)" }
 };
 
 // ── Camera ──────────────────────────────────────────────────────────────────
@@ -84,15 +110,18 @@ cameraSelect.addEventListener("change", () => {
 // ── Filters (live preview + capture) ────────────────────────────────────────
 
 function updateVideoFilter() {
-    video.classList.remove("filter-grayscale", "filter-sepia");
-    const filter = filterSelect.value;
-    if (filter === "grayscale") video.classList.add("filter-grayscale");
-    else if (filter === "sepia") video.classList.add("filter-sepia");
+    const filter = FILTERS[filterSelect.value] || FILTERS.none;
+    video.style.filter = filter.css || "none";
 }
 
 filterSelect.addEventListener("change", updateVideoFilter);
 
-// ── Strip layout picker ─────────────────────────────────────────────────────
+// ── Strip layout picker (camera preview follows the chosen layout) ─────────
+
+function applyLayoutAspect(layoutId) {
+    const aspect = LAYOUT_ASPECT[layoutId] || 0.75;
+    videoWrapper.style.aspectRatio = String(aspect);
+}
 
 stripLayoutPicker.addEventListener("click", (e) => {
     const option = e.target.closest(".strip-option");
@@ -102,7 +131,90 @@ stripLayoutPicker.addEventListener("click", (e) => {
     stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
         btn.classList.toggle("active", btn === option);
     });
+    applyLayoutAspect(selectedStripLayout);
 });
+
+// ── Stickers ─────────────────────────────────────────────────────────────────
+
+function addSticker(emoji) {
+    const id = `sticker-${stickerIdCounter++}`;
+    const wrapperRect = videoWrapper.getBoundingClientRect();
+    const sizePx = Math.max(32, wrapperRect.width * 0.14);
+    const sizePercent = (sizePx / wrapperRect.width) * 100;
+
+    const el = document.createElement("div");
+    el.className = "sticker";
+    el.style.fontSize = `${sizePx}px`;
+    el.style.left = "50%";
+    el.style.top = "50%";
+    el.textContent = emoji;
+
+    const removeBtn = document.createElement("span");
+    removeBtn.className = "sticker-remove";
+    removeBtn.textContent = "×";
+    removeBtn.title = "Remove sticker";
+    removeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
+    removeBtn.addEventListener("click", (e) => {
+        e.stopPropagation();
+        removeSticker(id);
+    });
+    el.appendChild(removeBtn);
+
+    const stickerData = { id, emoji, xPercent: 50, yPercent: 50, sizePercent, el };
+    stickers.push(stickerData);
+    makeStickerDraggable(el, stickerData);
+    stickerLayer.appendChild(el);
+}
+
+function removeSticker(id) {
+    const idx = stickers.findIndex((s) => s.id === id);
+    if (idx === -1) return;
+    stickers[idx].el.remove();
+    stickers.splice(idx, 1);
+}
+
+function clearStickers() {
+    stickers.forEach((s) => s.el.remove());
+    stickers.length = 0;
+}
+
+function makeStickerDraggable(el, sticker) {
+    el.addEventListener("pointerdown", (e) => {
+        if (isCapturing) return;
+        e.preventDefault();
+        el.setPointerCapture(e.pointerId);
+        el.classList.add("dragging");
+
+        const onMove = (ev) => {
+            const rect = videoWrapper.getBoundingClientRect();
+            let xPercent = ((ev.clientX - rect.left) / rect.width) * 100;
+            let yPercent = ((ev.clientY - rect.top) / rect.height) * 100;
+            xPercent = Math.min(100, Math.max(0, xPercent));
+            yPercent = Math.min(100, Math.max(0, yPercent));
+            sticker.xPercent = xPercent;
+            sticker.yPercent = yPercent;
+            el.style.left = `${xPercent}%`;
+            el.style.top = `${yPercent}%`;
+        };
+
+        const onUp = () => {
+            el.classList.remove("dragging");
+            document.removeEventListener("pointermove", onMove);
+            document.removeEventListener("pointerup", onUp);
+        };
+
+        document.addEventListener("pointermove", onMove);
+        document.addEventListener("pointerup", onUp);
+    });
+}
+
+stickerPalette.addEventListener("click", (e) => {
+    const btn = e.target.closest(".sticker-option");
+    if (!btn || isCapturing) return;
+    addSticker(btn.dataset.emoji);
+});
+
+clearStickersBtn.addEventListener("click", clearStickers);
 
 // ── Audio ───────────────────────────────────────────────────────────────────
 
@@ -164,53 +276,83 @@ function setControlsDisabled(disabled) {
     stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
         btn.disabled = disabled;
     });
+    stickerPalette.querySelectorAll(".sticker-option").forEach((btn) => {
+        btn.disabled = disabled;
+    });
+    clearStickersBtn.disabled = disabled;
     isCapturing = disabled;
 }
 
 // ── Image processing ────────────────────────────────────────────────────────
+
+// Mirrors CSS `object-fit: cover` so the captured frame matches what the
+// user saw in the preview once the wrapper's aspect ratio changes with layout.
+function getCoverCropRect(srcWidth, srcHeight, targetAspect) {
+    const srcAspect = srcWidth / srcHeight;
+    let sx = 0, sy = 0, sw = srcWidth, sh = srcHeight;
+
+    if (srcAspect > targetAspect) {
+        sw = srcHeight * targetAspect;
+        sx = (srcWidth - sw) / 2;
+    } else {
+        sh = srcWidth / targetAspect;
+        sy = (srcHeight - sh) / 2;
+    }
+
+    return { sx, sy, sw, sh };
+}
+
+function applyVignette(ctx, width, height, strength) {
+    const gradient = ctx.createRadialGradient(
+        width / 2, height / 2, Math.min(width, height) * 0.25,
+        width / 2, height / 2, Math.min(width, height) * 0.7
+    );
+    gradient.addColorStop(0, "rgba(0,0,0,0)");
+    gradient.addColorStop(1, `rgba(0,0,0,${strength})`);
+    ctx.fillStyle = gradient;
+    ctx.fillRect(0, 0, width, height);
+}
+
+function drawStickers(ctx, canvasWidth, canvasHeight) {
+    stickers.forEach((s) => {
+        const fontSize = (s.sizePercent / 100) * canvasWidth;
+        ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        ctx.fillText(s.emoji, (s.xPercent / 100) * canvasWidth, (s.yPercent / 100) * canvasHeight);
+    });
+}
 
 function captureFrame() {
     if (!video.videoWidth || !video.videoHeight) {
         throw new Error("Camera not ready");
     }
 
+    const targetAspect = LAYOUT_ASPECT[selectedStripLayout] || (video.videoWidth / video.videoHeight);
+    const { sx, sy, sw, sh } = getCoverCropRect(video.videoWidth, video.videoHeight, targetAspect);
+
     const canvas = document.createElement("canvas");
-    canvas.width = video.videoWidth;
-    canvas.height = video.videoHeight;
+    canvas.width = Math.round(sw);
+    canvas.height = Math.round(sh);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
+    const filterInfo = FILTERS[filterSelect.value] || FILTERS.none;
+
+    ctx.save();
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
-    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.filter = filterInfo.css || "none";
+    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+    ctx.restore();
 
-    applyFilter(ctx, canvas.width, canvas.height, filterSelect.value);
-
-    return canvas.toDataURL("image/png");
-}
-
-function applyFilter(ctx, width, height, filter) {
-    if (filter === "none") return;
-
-    const imageData = ctx.getImageData(0, 0, width, height);
-    const data = imageData.data;
-
-    for (let i = 0; i < data.length; i += 4) {
-        const r = data[i];
-        const g = data[i + 1];
-        const b = data[i + 2];
-
-        if (filter === "grayscale") {
-            const gray = 0.299 * r + 0.587 * g + 0.114 * b;
-            data[i] = data[i + 1] = data[i + 2] = gray;
-        } else if (filter === "sepia") {
-            data[i]     = Math.min(255, r * 0.393 + g * 0.769 + b * 0.189);
-            data[i + 1] = Math.min(255, r * 0.349 + g * 0.686 + b * 0.168);
-            data[i + 2] = Math.min(255, r * 0.272 + g * 0.534 + b * 0.131);
-        }
+    ctx.filter = "none";
+    if (filterInfo.vignette) {
+        applyVignette(ctx, canvas.width, canvas.height, filterInfo.vignette);
     }
 
-    ctx.putImageData(imageData, 0, 0);
+    drawStickers(ctx, canvas.width, canvas.height);
+
+    return canvas.toDataURL("image/png");
 }
 
 function loadImages(imageDataArray) {
@@ -291,7 +433,7 @@ function addPhotoToGallery(imageData, label) {
     img.alt = label || "Captured photo";
 
     const downloadBtn = document.createElement("button");
-    downloadBtn.textContent = "💾 Save & Download";
+    downloadBtn.textContent = "💾 Download";
     downloadBtn.className = "download-btn";
 
     photoContainer.imageData = imageData;
@@ -364,36 +506,19 @@ stripBtn.addEventListener("click", () => {
     capturePhotoStrip();
 });
 
-// ── Save & download ─────────────────────────────────────────────────────────
+// ── Download ─────────────────────────────────────────────────────────────────
 
-async function saveAndDownloadImage(imageData, filename, button) {
+function saveAndDownloadImage(imageData, filename, button) {
     button.disabled = true;
-    button.textContent = "Saving...";
+    button.textContent = "Downloading...";
 
-    try {
-        const res = await fetch("/save-image", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: imageData, filename })
-        });
+    downloadBlob(imageData, filename);
 
-        const data = await res.json();
-        if (!data.success) throw new Error(data.message || "Save failed");
-
-        downloadBlob(imageData, filename);
-        button.textContent = "✅ Saved & Downloaded";
-        loadServerGallery();
-
-        setTimeout(() => {
-            button.textContent = "💾 Save & Download";
-            button.disabled = false;
-        }, 2000);
-    } catch (err) {
-        console.error(err);
-        alert("Save failed. Make sure the server is running (npm start).");
-        button.textContent = "💾 Save & Download";
+    button.textContent = "✅ Downloaded";
+    setTimeout(() => {
+        button.textContent = "💾 Download";
         button.disabled = false;
-    }
+    }, 1500);
 }
 
 function downloadBlob(dataUrl, filename) {
@@ -421,7 +546,7 @@ batchSaveBtn.addEventListener("click", saveSelectedImages);
 function updateBatchButton() {
     const count = document.querySelectorAll(".photo-checkbox:checked").length;
     batchSaveBtn.classList.toggle("hidden", count === 0);
-    batchSaveBtn.textContent = `💾 Save ${count} Selected Image${count !== 1 ? "s" : ""}`;
+    batchSaveBtn.textContent = `💾 Download ${count} Selected Image${count !== 1 ? "s" : ""}`;
 }
 
 async function saveSelectedImages() {
@@ -435,125 +560,42 @@ async function saveSelectedImages() {
     }
 
     batchSaveBtn.disabled = true;
-    batchSaveBtn.textContent = `Saving ${selected.length} images...`;
+    batchSaveBtn.textContent = `Downloading ${selected.length} images...`;
 
     try {
         const timestamp = Date.now();
-        await Promise.all(
-            selected.map(async (container, index) => {
-                const filename = `photobooth_batch_${timestamp}_${index + 1}.png`;
-                const res = await fetch("/save-image", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ image: container.imageData, filename })
-                });
-                const data = await res.json();
-                if (!data.success) throw new Error(data.message);
-                downloadBlob(container.imageData, filename);
-            })
-        );
+        selected.forEach((container, index) => {
+            const filename = `photobooth_batch_${timestamp}_${index + 1}.png`;
+            downloadBlob(container.imageData, filename);
+        });
 
         selected.forEach((c) => { c.querySelector(".photo-checkbox").checked = false; });
         selectAllBtn.textContent = "Select All";
-        loadServerGallery();
     } catch (err) {
         console.error(err);
-        alert("Batch save failed.");
+        alert("Batch download failed.");
     } finally {
         batchSaveBtn.disabled = false;
         updateBatchButton();
     }
 }
 
-// ── Server gallery ──────────────────────────────────────────────────────────
-
-async function loadServerGallery() {
-    if (!serverGallery || !serverEmpty) return;
-
-    try {
-        const res = await fetch("/api/gallery");
-        const data = await res.json();
-
-        serverGallery.innerHTML = "";
-
-        if (!data.success || !data.images.length) {
-            serverEmpty.classList.remove("hidden");
-            return;
-        }
-
-        serverEmpty.classList.add("hidden");
-
-        data.images.forEach(({ filename, url, savedAt }) => {
-            const item = document.createElement("div");
-            item.className = "photo-item server-photo";
-
-            const img = document.createElement("img");
-            img.src = url;
-            img.alt = filename;
-            img.loading = "lazy";
-
-            const meta = document.createElement("p");
-            meta.className = "photo-meta";
-            meta.textContent = new Date(savedAt).toLocaleString();
-
-            const actions = document.createElement("div");
-            actions.className = "photo-actions";
-
-            const downloadBtn = document.createElement("a");
-            downloadBtn.href = url;
-            downloadBtn.download = filename;
-            downloadBtn.className = "download-btn";
-            downloadBtn.textContent = "⬇ Download";
-
-            const deleteBtn = document.createElement("button");
-            deleteBtn.className = "delete-server-btn";
-            deleteBtn.textContent = "🗑 Delete";
-            deleteBtn.addEventListener("click", async () => {
-                if (!confirm(`Delete ${filename}?`)) return;
-                const delRes = await fetch(`/api/gallery/${encodeURIComponent(filename)}`, { method: "DELETE" });
-                const delData = await delRes.json();
-                if (delData.success) {
-                    item.remove();
-                    if (!serverGallery.children.length) serverEmpty.classList.remove("hidden");
-                } else {
-                    alert("Could not delete file.");
-                }
-            });
-
-            actions.appendChild(downloadBtn);
-            actions.appendChild(deleteBtn);
-            item.appendChild(img);
-            item.appendChild(meta);
-            item.appendChild(actions);
-            serverGallery.appendChild(item);
-        });
-    } catch (err) {
-        console.error("Failed to load server gallery:", err);
-    }
-}
-
-if (refreshServerBtn) {
-    refreshServerBtn.addEventListener("click", loadServerGallery);
-}
-
 // ── Fullscreen ────────────────────────────────────────────────────────────────
 
-if (fullscreenBtn) {
-    fullscreenBtn.addEventListener("click", () => {
-        if (!document.fullscreenElement) {
-            document.documentElement.requestFullscreen().catch(() => {});
-        } else {
-            document.exitFullscreen();
-        }
-    });
+fullscreenBtn.addEventListener("click", () => {
+    if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+        document.exitFullscreen();
+    }
+});
 
-    document.addEventListener("fullscreenchange", () => {
-        fullscreenBtn.title = document.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen";
-    });
-}
+document.addEventListener("fullscreenchange", () => {
+    fullscreenBtn.title = document.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen";
+});
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
 updateVideoFilter();
+applyLayoutAspect(selectedStripLayout);
 initCameras();
-loadServerGallery();

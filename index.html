@@ -21,6 +21,7 @@
                 <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="polite">
                     <span id="countdown-number"></span>
                 </div>
+                <div id="sticker-layer" class="sticker-layer"></div>
             </div>
 
             <div class="camera-options">
@@ -36,8 +37,33 @@
                         <option value="none">No Filter</option>
                         <option value="grayscale">Black &amp; White</option>
                         <option value="sepia">Sepia</option>
+                        <option value="noir">Noir</option>
+                        <option value="vintage">Vintage</option>
+                        <option value="vivid">Vivid</option>
+                        <option value="cool">Cool Tone</option>
+                        <option value="warm">Warm Tone</option>
+                        <option value="dreamy">Dreamy</option>
                     </select>
                 </label>
+            </div>
+
+            <div class="stickers-section">
+                <div class="section-header">
+                    <p class="strip-layout-label">Stickers</p>
+                    <button id="clear-stickers-btn" class="btn btn-small">Clear Stickers</button>
+                </div>
+                <div id="sticker-palette" class="sticker-palette">
+                    <button type="button" class="sticker-option" data-emoji="😎">😎</button>
+                    <button type="button" class="sticker-option" data-emoji="❤️">❤️</button>
+                    <button type="button" class="sticker-option" data-emoji="🎉">🎉</button>
+                    <button type="button" class="sticker-option" data-emoji="⭐">⭐</button>
+                    <button type="button" class="sticker-option" data-emoji="👑">👑</button>
+                    <button type="button" class="sticker-option" data-emoji="🎀">🎀</button>
+                    <button type="button" class="sticker-option" data-emoji="🔥">🔥</button>
+                    <button type="button" class="sticker-option" data-emoji="💕">💕</button>
+                    <button type="button" class="sticker-option" data-emoji="🌸">🌸</button>
+                    <button type="button" class="sticker-option" data-emoji="✨">✨</button>
+                </div>
             </div>
 
             <div class="strip-layout-section">
@@ -83,7 +109,7 @@
             </div>
             <p id="session-empty" class="empty-message">No photos yet — capture one to get started!</p>
             <div id="gallery"></div>
-            <button id="batch-save-btn" class="batch-save-btn hidden">💾 Save Selected Images</button>
+            <button id="batch-save-btn" class="batch-save-btn hidden">💾 Download Selected Images</button>
         </div>
     </div>
 
