@@ -384,6 +384,63 @@ select, input[type="number"] {
     opacity: 1;
 }
 
+#image-preview-modal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#image-preview-modal.hidden {
+    display: none;
+}
+
+.preview-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(20, 14, 10, 0.78);
+    backdrop-filter: blur(4px);
+}
+
+.preview-dialog {
+    position: relative;
+    max-width: min(92vw, 900px);
+    max-height: min(88vh, 900px);
+    padding: 20px 20px 28px;
+    border-radius: 16px;
+    background: rgba(246, 240, 227, 0.96);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.preview-close {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 34px;
+    height: 34px;
+    border: none;
+    border-radius: 50%;
+    background: var(--rust);
+    color: #fff;
+    font-size: 1.2rem;
+    cursor: pointer;
+}
+
+#preview-image {
+    display: block;
+    max-width: 100%;
+    max-height: 100%;
+    width: auto;
+    height: auto;
+    object-fit: contain;
+    border-radius: 10px;
+}
+
 .countdown-overlay {
     position: absolute;
     inset: 0;

@@ -619,7 +619,32 @@ function updateEmptyState() {
 function openPreview(imageData) {
     if (!previewModal || !previewImage) return;
     previewImage.src = imageData;
-    previewImage.alt = "Captured photo preview";
+    previewImage.alt = "Photo strip preview";
+
+    const img = new Image();
+    img.onload = () => {
+        const maxWidth = Math.min(window.innerWidth * 0.9, 900);
+        const maxHeight = Math.min(window.innerHeight * 0.82, 900);
+        const ratio = img.width / img.height;
+
+        let width = img.width;
+        let height = img.height;
+
+        if (width > maxWidth) {
+            width = maxWidth;
+            height = width / ratio;
+        }
+
+        if (height > maxHeight) {
+            height = maxHeight;
+            width = height * ratio;
+        }
+
+        previewImage.style.width = `${Math.round(width)}px`;
+        previewImage.style.height = `${Math.round(height)}px`;
+    };
+    img.src = imageData;
+
     previewModal.classList.remove("hidden");
     previewModal.setAttribute("aria-hidden", "false");
 }
@@ -633,7 +658,7 @@ function closePreview() {
 
 if (previewModal) {
     previewModal.addEventListener("click", (e) => {
-        if (e.target.classList.contains("preview-backdrop") || e.target === previewModal) {
+        if (e.target.classList.contains("modal-backdrop") || e.target === previewModal) {
             closePreview();
         }
     });
