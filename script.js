@@ -625,6 +625,7 @@ function setPreviewZoom(level) {
     previewZoom = Math.max(0.8, Math.min(3, level));
     if (previewImage) {
         previewImage.style.transform = `scale(${previewZoom})`;
+        previewImage.style.cursor = previewZoom > 1 ? "grab" : "zoom-in";
     }
 }
 
@@ -700,6 +701,23 @@ if (zoomOutBtn) {
 
 if (zoomResetBtn) {
     zoomResetBtn.addEventListener("click", resetPreviewZoom);
+}
+
+if (previewImage) {
+    previewImage.addEventListener("wheel", (e) => {
+        if (!previewModal || previewModal.classList.contains("hidden")) return;
+        e.preventDefault();
+        const delta = e.deltaY < 0 ? 0.15 : -0.15;
+        setPreviewZoom(previewZoom + delta);
+    }, { passive: false });
+
+    previewImage.addEventListener("dblclick", () => {
+        if (previewZoom > 1) {
+            resetPreviewZoom();
+        } else {
+            setPreviewZoom(2);
+        }
+    });
 }
 
 document.addEventListener("keydown", (e) => {

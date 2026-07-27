@@ -460,7 +460,7 @@ select, input[type="number"] {
     display: flex;
     align-items: center;
     justify-content: center;
-    overflow: hidden;
+    overflow: auto;
 }
 
 #preview-image {
@@ -473,6 +473,8 @@ select, input[type="number"] {
     border-radius: 8px;
     transition: transform 0.2s ease;
     transform-origin: center center;
+    cursor: zoom-in;
+    user-select: none;
 }
 
 .countdown-overlay {
