@@ -16,6 +16,9 @@ const sessionEmpty = document.getElementById("session-empty");
 const previewModal = document.getElementById("image-preview-modal");
 const previewImage = document.getElementById("preview-image");
 const closePreviewBtn = document.getElementById("close-preview-btn");
+const zoomInBtn = document.getElementById("zoom-in-btn");
+const zoomOutBtn = document.getElementById("zoom-out-btn");
+const zoomResetBtn = document.getElementById("zoom-reset-btn");
 
 // Sticker & Editor DOM Elements
 const stickerEditorModal = document.getElementById("sticker-editor-modal");
@@ -31,6 +34,8 @@ let isCapturing = false;
 let selectedStripLayout = "vertical-4";
 let activeRawStripData = null;
 let pendingPreviewContainer = null;
+let previewZoom = 1;
+let previewSource = null;
 
 // Sticker State Arrays & Counters
 let stickers = [];
@@ -616,10 +621,24 @@ function updateEmptyState() {
         : "Your photos will appear here.";
 }
 
+function setPreviewZoom(level) {
+    previewZoom = Math.max(0.8, Math.min(3, level));
+    if (previewImage) {
+        previewImage.style.transform = `scale(${previewZoom})`;
+    }
+}
+
+function resetPreviewZoom() {
+    setPreviewZoom(1);
+}
+
 function openPreview(imageData) {
     if (!previewModal || !previewImage) return;
+    previewSource = imageData;
+    previewZoom = 1;
     previewImage.src = imageData;
     previewImage.alt = "Photo strip preview";
+    previewImage.style.transform = "scale(1)";
 
     const img = new Image();
     img.onload = () => {
@@ -654,6 +673,9 @@ function closePreview() {
     previewModal.classList.add("hidden");
     previewModal.setAttribute("aria-hidden", "true");
     previewImage.removeAttribute("src");
+    previewZoom = 1;
+    previewSource = null;
+    previewImage.style.transform = "scale(1)";
 }
 
 if (previewModal) {
@@ -668,9 +690,34 @@ if (closePreviewBtn) {
     closePreviewBtn.addEventListener("click", closePreview);
 }
 
+if (zoomInBtn) {
+    zoomInBtn.addEventListener("click", () => setPreviewZoom(previewZoom + 0.25));
+}
+
+if (zoomOutBtn) {
+    zoomOutBtn.addEventListener("click", () => setPreviewZoom(previewZoom - 0.25));
+}
+
+if (zoomResetBtn) {
+    zoomResetBtn.addEventListener("click", resetPreviewZoom);
+}
+
 document.addEventListener("keydown", (e) => {
     if (e.key === "Escape" && previewModal && !previewModal.classList.contains("hidden")) {
         closePreview();
+    }
+
+    if (!previewModal || previewModal.classList.contains("hidden")) return;
+
+    if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        setPreviewZoom(previewZoom + 0.25);
+    } else if (e.key === "-") {
+        e.preventDefault();
+        setPreviewZoom(previewZoom - 0.25);
+    } else if (e.key === "0") {
+        e.preventDefault();
+        resetPreviewZoom();
     }
 });
 

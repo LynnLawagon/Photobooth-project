@@ -14,8 +14,15 @@
     <div id="image-preview-modal" class="hidden" aria-hidden="true">
         <div class="preview-backdrop"></div>
         <div class="preview-dialog" role="dialog" aria-modal="true" aria-label="Image preview">
+            <div class="preview-toolbar">
+                <button id="zoom-out-btn" class="preview-tool" type="button" aria-label="Zoom out">−</button>
+                <button id="zoom-reset-btn" class="preview-tool" type="button" aria-label="Reset zoom">100%</button>
+                <button id="zoom-in-btn" class="preview-tool" type="button" aria-label="Zoom in">+</button>
+            </div>
             <button id="close-preview-btn" class="preview-close" type="button" aria-label="Close preview">×</button>
-            <img id="preview-image" alt="Preview" />
+            <div class="preview-image-frame">
+                <img id="preview-image" alt="Preview" />
+            </div>
         </div>
     </div>
 
