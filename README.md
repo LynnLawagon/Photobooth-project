@@ -1,105 +1,100 @@
-# Photobooth Project
+﻿# Photobooth Project
 
-A modern, web-based photobooth application with live camera capture, filters, photo strips, and a server-backed gallery.
+A web-based photobooth experience with a live camera preview, vintage-style filters, customizable photo strips, sticker editing, and a session gallery for downloading your captures.
 
 ## Features
 
-- **Live Camera Feed** — Real-time video with mirror correction and camera switching
-- **Layout-Aware Camera** — The preview frame reshapes (portrait, landscape, or square) to match whichever photo strip layout you pick, and captures are cropped to match
-- **Countdown Timer** — Visual overlay countdown (0–60 seconds) before capture
-- **Photo Strip Mode** — Capture 3 or 4 shots and combine them into a strip, using vertical, horizontal, or grid layouts
-- **Aesthetic Filters** — Black & White, Sepia, Noir, Vintage, Vivid, Cool Tone, Warm Tone, and Dreamy, applied live and baked into captures
-- **Stickers** — Drop emoji stickers onto the live preview, drag them into place, and they're baked into every photo and strip shot
-- **Flash & Shutter Sound** — Photobooth-style feedback on every shot
-- **Session Gallery** — Preview, select, delete, and batch-download photos
-- **Fullscreen Mode** — Kiosk-friendly fullscreen toggle
-- **Responsive Design** — Works on desktop and mobile
+- Live camera feed with camera switching and mirrored viewing
+- Countdown timer before each capture
+- Two strip layouts:
+  - Classic 4-photo strip
+  - Polaroid-style single frame
+- Film-style filters including grayscale, sepia, noir, vintage, vivid, cool, warm, and dreamy
+- Sticker placement and editing on the preview before saving
+- Flash and shutter sound effects for a playful photobooth feel
+- Gallery of captured images with preview, delete, select, and batch download options
+- Popup preview for viewing each strip image in a larger format with zoom controls
+- Fullscreen mode for a kiosk-style experience
 
 ## Quick Start
 
 ### Prerequisites
 
-- Node.js 14+
+- Node.js 18+
 - A webcam
-- A modern browser (Chrome, Firefox, Safari, Edge)
+- A modern browser such as Chrome, Edge, Firefox, or Safari
 
 ### Installation
 
-```bash
+`ash
 cd "Photobooth project"
 npm install
-```
+`
 
 ### Running
 
-```bash
+`ash
 npm start
-```
+`
 
-Open **http://localhost:3000** in your browser and allow camera access when prompted.
+Open http://localhost:3000 in your browser and allow camera access when prompted.
 
 ## How to Use
 
-### Single Photo
+### Capture a Strip
 
-1. Choose a camera, a strip layout (this also shapes the camera preview), and an optional filter
-2. Optionally tap stickers to add them to the preview, then drag them into place
-3. Set the timer (seconds before capture; use `0` for instant)
-4. Click **Capture**
+1. Choose your camera and filter.
+2. Pick a strip layout.
+3. Set the timer delay (use 0 for instant capture).
+4. Click Start Strip.
+5. Pose for each countdown and let the app build your strip.
 
-### Photo Strip
+### Add Stickers
 
-1. Pick a strip layout — the camera preview reshapes to match it
-2. Set the timer (delay between each shot)
-3. Click **Start Strip**
-4. Strike a pose for each countdown — all shots (with your chosen filter and stickers) are merged into one strip
+1. Open the sticker editor after your strip is created.
+2. Pick an emoji from the sticker palette.
+3. Drag it into place and resize or rotate it as needed.
+4. Close the editor to save the final image into the gallery.
 
-### Stickers
+### View and Save Photos
 
-- Click any sticker in the **Stickers** row to drop it onto the live preview
-- Drag a sticker to reposition it; click its **×** to remove it
-- **Clear Stickers** removes all of them at once
-- Stickers are baked into every photo and strip shot while they're on the preview
-
-### Saving Photos
-
-- **Download** on any session photo saves it straight to your device
-- Check multiple photos and use **Download Selected Images** to batch-download them
+- Click any photo in the gallery to open a larger popup preview.
+- Use the zoom controls or mouse wheel to inspect the image closely.
+- Click Download to save a single image.
+- Select multiple images and use Download Selected Images to batch save them.
 
 ## Project Structure
 
-```
+`	ext
 photobooth-project/
-├── index.html       # Main UI
-├── style.css        # Styles
-├── script.js        # Frontend logic (camera, filters, stickers, strips)
+├── index.html       # Main UI and modal preview markup
+├── style.css        # Styling for the app, gallery, and preview popup
+├── script.js        # Camera, filters, stickers, strip creation, and gallery logic
 ├── server.js        # Express static file server
 └── package.json
-```
+`
 
-All photo capture, filtering, and downloading happens client-side in the browser — the server just serves the static files.
+All capture, editing, and download actions happen in the browser. The server simply serves the app locally.
 
 ## Configuration
 
-Change the port via environment variable:
+Change the port with an environment variable:
 
-```bash
+`ash
 PORT=8080 npm start
-```
+`
 
-Or edit `server.js`:
+You can also update the port directly in server.js:
 
-```javascript
+`javascript
 const PORT = process.env.PORT || 3000;
-```
+`
 
 ## Troubleshooting
 
-**Camera not working** — Check browser permissions; ensure no other app is using the webcam.
-
-**Download didn't start** — Some browsers block automatic downloads from a page not loaded over `http://` — make sure you're accessing the app at `http://localhost:3000` (not as a local file) and check your browser's download prompt/settings.
-
-**Port in use** — Set a different `PORT` environment variable.
+- Camera not working: check browser camera permissions and ensure no other app is using the webcam.
+- Downloads not starting: make sure you are opening the app at http://localhost:3000 and allow downloads in your browser.
+- Port already in use: set a different PORT value.
 
 ## License
 
