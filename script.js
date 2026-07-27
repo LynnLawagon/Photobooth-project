@@ -1,7 +1,5 @@
 // DOM Elements
 const video = document.getElementById("video");
-const videoWrapper = document.querySelector(".video-wrapper");
-const captureBtn = document.getElementById("capture-btn");
 const stripBtn = document.getElementById("strip-btn");
 const gallery = document.getElementById("gallery");
 const timerInput = document.getElementById("timer");
@@ -15,37 +13,47 @@ const selectAllBtn = document.getElementById("select-all-btn");
 const batchSaveBtn = document.getElementById("batch-save-btn");
 const fullscreenBtn = document.getElementById("fullscreen-btn");
 const sessionEmpty = document.getElementById("session-empty");
+
+// Sticker Editor Elements
+const stickerEditorModal = document.getElementById("sticker-editor-modal");
+const editorPreviewArea = document.getElementById("editor-preview-area");
+const editingImage = document.getElementById("editing-image");
+const closeEditorBtn = document.getElementById("close-editor-btn");
 const stickerLayer = document.getElementById("sticker-layer");
 const stickerPalette = document.getElementById("sticker-palette");
 const clearStickersBtn = document.getElementById("clear-stickers-btn");
+
+//zoom controls
+const zoomSlider = document.getElementById('zoom-slider');
+const zoomContainer = document.getElementById('zoom-container');
 
 let currentStream = null;
 let isCapturing = false;
 let selectedStripLayout = "vertical-4";
 let stickerIdCounter = 0;
-const stickers = []; // { id, emoji, xPercent, yPercent, sizePercent, el }
+let stickers = []; 
+let activeRawStripData = null;
+
+//zoom controls
+if (zoomSlider && zoomContainer) {
+    zoomSlider.addEventListener('input', (e) => {
+        const scale = e.target.value;
+        zoomContainer.style.transform = `scale(${scale})`;
+    });
+}
 
 const STRIP_LAYOUTS = {
-    "vertical-4":   { shots: 4, cols: 1, rows: 4, label: "Vertical 4" },
-    "horizontal-4": { shots: 4, cols: 4, rows: 1, label: "Horizontal 4" },
-    "grid-2x2":     { shots: 4, cols: 2, rows: 2, label: "2×2 Grid" },
-    "vertical-3":   { shots: 3, cols: 1, rows: 3, label: "Vertical 3" },
-    "horizontal-3": { shots: 3, cols: 3, rows: 1, label: "Horizontal 3" }
+    "vertical-4": { shots: 4, cols: 1, rows: 4, label: "Classic 4" },
+    "polaroid-1": { shots: 1, cols: 1, rows: 1, label: "Polaroid" }
 };
 
-// width / height for the camera preview + capture crop, per layout
 const LAYOUT_ASPECT = {
-    "vertical-4":   3 / 4,
-    "vertical-3":   3 / 4,
-    "horizontal-4": 4 / 3,
-    "horizontal-3": 4 / 3,
-    "grid-2x2":     1
+    "vertical-4": 3 / 4,
+    "polaroid-1": 1
 };
 
-// Aesthetic filters. `css` is used as both the live-preview CSS filter and
-// the canvas 2D context filter at capture time, so preview always matches output.
 const FILTERS = {
-    none:     { css: "" },
+    none:       { css: "" },
     grayscale:{ css: "grayscale(100%)" },
     sepia:    { css: "sepia(100%)" },
     noir:     { css: "grayscale(100%) contrast(140%) brightness(85%)", vignette: 0.45 },
@@ -69,7 +77,7 @@ async function initCameras() {
         cameraSelect.innerHTML = cameras.length
             ? cameras.map((cam, i) =>
                 `<option value="${cam.deviceId}">${cam.label || `Camera ${i + 1}`}</option>`
-            ).join("")
+              ).join("")
             : `<option value="">No camera found</option>`;
 
         if (cameras.length) {
@@ -107,7 +115,7 @@ cameraSelect.addEventListener("change", () => {
     if (cameraSelect.value) startCamera(cameraSelect.value);
 });
 
-// ── Filters (live preview + capture) ────────────────────────────────────────
+// ── Filters ─────────────────────────────────────────────────────────────────
 
 function updateVideoFilter() {
     const filter = FILTERS[filterSelect.value] || FILTERS.none;
@@ -116,11 +124,12 @@ function updateVideoFilter() {
 
 filterSelect.addEventListener("change", updateVideoFilter);
 
-// ── Strip layout picker (camera preview follows the chosen layout) ─────────
+// ── Strip layout picker ─────────────────────────────────────────────────────
 
 function applyLayoutAspect(layoutId) {
     const aspect = LAYOUT_ASPECT[layoutId] || 0.75;
-    videoWrapper.style.aspectRatio = String(aspect);
+    const videoWrapper = document.querySelector(".video-wrapper");
+    if (videoWrapper) videoWrapper.style.aspectRatio = String(aspect);
 }
 
 stripLayoutPicker.addEventListener("click", (e) => {
@@ -134,36 +143,70 @@ stripLayoutPicker.addEventListener("click", (e) => {
     applyLayoutAspect(selectedStripLayout);
 });
 
-// ── Stickers ─────────────────────────────────────────────────────────────────
+// ── Post-Capture Stickers & Editor ──────────────────────────────────────────
+
+function openStickerEditor(stripDataUrl) {
+    activeRawStripData = stripDataUrl;
+    editingImage.src = stripDataUrl;
+    clearStickers();
+    stickerEditorModal.classList.remove("hidden");
+}
+
+closeEditorBtn.addEventListener("click", () => {
+    burnStickersAndSave();
+});
 
 function addSticker(emoji) {
     const id = `sticker-${stickerIdCounter++}`;
-    const wrapperRect = videoWrapper.getBoundingClientRect();
-    const sizePx = Math.max(32, wrapperRect.width * 0.14);
-    const sizePercent = (sizePx / wrapperRect.width) * 100;
+    const previewRect = editorPreviewArea.getBoundingClientRect();
+    const sizePx = Math.max(48, previewRect.width * 0.16);
+    const sizePercent = (sizePx / previewRect.width) * 100;
 
     const el = document.createElement("div");
     el.className = "sticker";
-    el.style.fontSize = `${sizePx}px`;
     el.style.left = "50%";
     el.style.top = "50%";
-    el.textContent = emoji;
 
-    const removeBtn = document.createElement("span");
-    removeBtn.className = "sticker-remove";
-    removeBtn.textContent = "×";
-    removeBtn.title = "Remove sticker";
+    const content = document.createElement("span");
+    content.className = "sticker-content";
+    content.style.fontSize = `${sizePx}px`;
+    content.textContent = emoji;
+    el.appendChild(content);
+
+    const controls = document.createElement("div");
+    controls.className = "sticker-controls";
+
+    const removeBtn = document.createElement("div");
+    removeBtn.className = "sticker-handle remove-handle";
+    removeBtn.textContent = "✕";
     removeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
     removeBtn.addEventListener("click", (e) => {
         e.stopPropagation();
         removeSticker(id);
     });
-    el.appendChild(removeBtn);
+    controls.appendChild(removeBtn);
 
-    const stickerData = { id, emoji, xPercent: 50, yPercent: 50, sizePercent, el };
+    const resizeBtn = document.createElement("div");
+    resizeBtn.className = "sticker-handle resize-handle";
+    resizeBtn.textContent = "⤢";
+    controls.appendChild(resizeBtn);
+
+    const rotateBtn = document.createElement("div");
+    rotateBtn.className = "sticker-handle rotate-handle";
+    rotateBtn.textContent = "↻";
+    controls.appendChild(rotateBtn);
+
+    el.appendChild(controls);
+
+    const stickerData = { id, emoji, xPercent: 50, yPercent: 50, sizePercent, rotation: 0, el, content };
     stickers.push(stickerData);
-    makeStickerDraggable(el, stickerData);
+    setupStickerInteractions(el, stickerData, resizeBtn, rotateBtn);
+    setActiveSticker(stickerData);
     stickerLayer.appendChild(el);
+}
+
+function setActiveSticker(targetSticker) {
+    stickers.forEach((s) => s.el.classList.toggle("active", s === targetSticker));
 }
 
 function removeSticker(id) {
@@ -178,23 +221,41 @@ function clearStickers() {
     stickers.length = 0;
 }
 
-function makeStickerDraggable(el, sticker) {
+document.addEventListener("pointerdown", (e) => {
+    if (!e.target.closest(".sticker") && !e.target.closest(".sticker-palette")) {
+        stickers.forEach((s) => s.el.classList.remove("active"));
+    }
+});
+
+if (stickerPalette) {
+    stickerPalette.addEventListener("click", (e) => {
+        const option = e.target.closest(".sticker-option");
+        if (!option) return;
+        const emoji = option.dataset.emoji || option.textContent.trim();
+        if (emoji) addSticker(emoji);
+    });
+}
+
+if (clearStickersBtn) {
+    clearStickersBtn.addEventListener("click", clearStickers);
+}
+
+function setupStickerInteractions(el, sticker, resizeBtn, rotateBtn) {
     el.addEventListener("pointerdown", (e) => {
-        if (isCapturing) return;
+        if (e.target.classList.contains("sticker-handle")) return;
         e.preventDefault();
+        setActiveSticker(sticker);
         el.setPointerCapture(e.pointerId);
         el.classList.add("dragging");
 
         const onMove = (ev) => {
-            const rect = videoWrapper.getBoundingClientRect();
+            const rect = editorPreviewArea.getBoundingClientRect();
             let xPercent = ((ev.clientX - rect.left) / rect.width) * 100;
             let yPercent = ((ev.clientY - rect.top) / rect.height) * 100;
-            xPercent = Math.min(100, Math.max(0, xPercent));
-            yPercent = Math.min(100, Math.max(0, yPercent));
-            sticker.xPercent = xPercent;
-            sticker.yPercent = yPercent;
-            el.style.left = `${xPercent}%`;
-            el.style.top = `${yPercent}%`;
+            sticker.xPercent = Math.min(100, Math.max(0, xPercent));
+            sticker.yPercent = Math.min(100, Math.max(0, yPercent));
+            el.style.left = `${sticker.xPercent}%`;
+            el.style.top = `${sticker.yPercent}%`;
         };
 
         const onUp = () => {
@@ -206,17 +267,96 @@ function makeStickerDraggable(el, sticker) {
         document.addEventListener("pointermove", onMove);
         document.addEventListener("pointerup", onUp);
     });
+
+    resizeBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        resizeBtn.setPointerCapture(e.pointerId);
+
+        const startX = e.clientX;
+        const startSize = sticker.sizePercent;
+        const wrapperRect = editorPreviewArea.getBoundingClientRect();
+
+        const onMove = (ev) => {
+            const deltaX = ev.clientX - startX;
+            const deltaPercent = (deltaX / wrapperRect.width) * 100;
+            let newSize = Math.max(5, Math.min(70, startSize + deltaPercent * 1.5));
+            sticker.sizePercent = newSize;
+            const sizePx = (newSize / 100) * wrapperRect.width;
+            sticker.content.style.fontSize = `${sizePx}px`;
+        };
+
+        const onUp = () => {
+            document.removeEventListener("pointermove", onMove);
+            document.removeEventListener("pointerup", onUp);
+        };
+
+        document.addEventListener("pointermove", onMove);
+        document.addEventListener("pointerup", onUp);
+    });
+
+    rotateBtn.addEventListener("pointerdown", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        rotateBtn.setPointerCapture(e.pointerId);
+
+        const rect = el.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const startRotation = sticker.rotation;
+        const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
+
+        const onMove = (ev) => {
+            const currentAngle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX) * (180 / Math.PI);
+            const deltaAngle = currentAngle - startAngle;
+            sticker.rotation = Math.round((startRotation + deltaAngle) % 360);
+            sticker.content.style.transform = `rotate(${sticker.rotation}deg)`;
+        };
+
+        const onUp = () => {
+            document.removeEventListener("pointermove", onMove);
+            document.removeEventListener("pointerup", onUp);
+        };
+
+        document.addEventListener("pointermove", onMove);
+        document.addEventListener("pointerup", onUp);
+    });
 }
 
-stickerPalette.addEventListener("click", (e) => {
-    const btn = e.target.closest(".sticker-option");
-    if (!btn || isCapturing) return;
-    addSticker(btn.dataset.emoji);
-});
+function burnStickersAndSave() {
+    const img = new Image();
+    img.onload = () => {
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext("2d");
 
-clearStickersBtn.addEventListener("click", clearStickers);
+        ctx.drawImage(img, 0, 0);
 
-// ── Audio ───────────────────────────────────────────────────────────────────
+        stickers.forEach((s) => {
+            ctx.save();
+            const x = (s.xPercent / 100) * canvas.width;
+            const y = (s.yPercent / 100) * canvas.height;
+            ctx.translate(x, y);
+            ctx.rotate((s.rotation * Math.PI) / 180);
+
+            const fontSize = (s.sizePercent / 100) * canvas.width;
+            ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(s.emoji, 0, 0);
+            ctx.restore();
+        });
+
+        const finalDataUrl = canvas.toDataURL("image/png");
+        stickerEditorModal.classList.add("hidden");
+        const layout = STRIP_LAYOUTS[selectedStripLayout];
+        addPhotoToGallery(finalDataUrl, `${layout.label} strip`);
+    };
+    img.src = activeRawStripData;
+}
+
+// ── Audio & Visual ──────────────────────────────────────────────────────────
 
 function playShutterSound() {
     try {
@@ -231,10 +371,8 @@ function playShutterSound() {
         gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.08);
-    } catch (_) { /* audio optional */ }
+    } catch (_) {}
 }
-
-// ── Visual effects ──────────────────────────────────────────────────────────
 
 function triggerFlash() {
     flashOverlay.classList.add("flash-active");
@@ -268,25 +406,16 @@ function showCountdown(seconds) {
 }
 
 function setControlsDisabled(disabled) {
-    captureBtn.disabled = disabled;
     stripBtn.disabled = disabled;
     timerInput.disabled = disabled;
     cameraSelect.disabled = disabled;
     filterSelect.disabled = disabled;
-    stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
-        btn.disabled = disabled;
-    });
-    stickerPalette.querySelectorAll(".sticker-option").forEach((btn) => {
-        btn.disabled = disabled;
-    });
-    clearStickersBtn.disabled = disabled;
+    stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => { btn.disabled = disabled; });
     isCapturing = disabled;
 }
 
-// ── Image processing ────────────────────────────────────────────────────────
+// ── Image Processing ────────────────────────────────────────────────────────
 
-// Mirrors CSS `object-fit: cover` so the captured frame matches what the
-// user saw in the preview once the wrapper's aspect ratio changes with layout.
 function getCoverCropRect(srcWidth, srcHeight, targetAspect) {
     const srcAspect = srcWidth / srcHeight;
     let sx = 0, sy = 0, sw = srcWidth, sh = srcHeight;
@@ -313,14 +442,23 @@ function applyVignette(ctx, width, height, strength) {
     ctx.fillRect(0, 0, width, height);
 }
 
-function drawStickers(ctx, canvasWidth, canvasHeight) {
-    stickers.forEach((s) => {
-        const fontSize = (s.sizePercent / 100) * canvasWidth;
-        ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-        ctx.fillText(s.emoji, (s.xPercent / 100) * canvasWidth, (s.yPercent / 100) * canvasHeight);
-    });
+function drawDateStamp(ctx, canvasWidth, canvasHeight) {
+    const now = new Date();
+    const yy = String(now.getFullYear()).slice(-2);
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const text = `'${yy} ${mm} ${dd}`;
+
+    const fontSize = Math.max(12, Math.round(canvasWidth * 0.032));
+    ctx.save();
+    ctx.font = `italic bold ${fontSize}px "Courier New", monospace`;
+    ctx.fillStyle = "rgba(255, 140, 40, 0.85)";
+    ctx.textAlign = "right";
+    ctx.textBaseline = "bottom";
+    ctx.shadowColor = "rgba(0,0,0,0.5)";
+    ctx.shadowBlur = 2;
+    ctx.fillText(text, canvasWidth - fontSize * 0.6, canvasHeight - fontSize * 0.6);
+    ctx.restore();
 }
 
 function captureFrame() {
@@ -332,8 +470,8 @@ function captureFrame() {
     const { sx, sy, sw, sh } = getCoverCropRect(video.videoWidth, video.videoHeight, targetAspect);
 
     const canvas = document.createElement("canvas");
-    canvas.width = Math.round(sw);
-    canvas.height = Math.round(sh);
+    canvas.width = Math.round(sw * 1.5);
+    canvas.height = Math.round(sh * 1.5);
     const ctx = canvas.getContext("2d", { willReadFrequently: true });
 
     const filterInfo = FILTERS[filterSelect.value] || FILTERS.none;
@@ -350,7 +488,7 @@ function captureFrame() {
         applyVignette(ctx, canvas.width, canvas.height, filterInfo.vignette);
     }
 
-    drawStickers(ctx, canvas.width, canvas.height);
+    drawDateStamp(ctx, canvas.width, canvas.height);
 
     return canvas.toDataURL("image/png");
 }
@@ -369,15 +507,19 @@ function loadImages(imageDataArray) {
 }
 
 function createPhotoStrip(layoutId, imageDataArray) {
+    if (layoutId === "polaroid-1") {
+        return createPolaroidFrame(imageDataArray[0]);
+    }
+
     const layout = STRIP_LAYOUTS[layoutId];
-    const gap = 8;
-    const padding = 16;
+    const gap = 12;
+    const padding = 24;
 
     return loadImages(imageDataArray).then((loaded) => {
         let cellW = loaded[0].width;
         let cellH = loaded[0].height;
 
-        const maxWidth = 1600;
+        const maxWidth = 1800;
         const naturalWidth = layout.cols * cellW + (layout.cols - 1) * gap + padding * 2;
         if (naturalWidth > maxWidth) {
             const scale = (maxWidth - (layout.cols - 1) * gap - padding * 2) / (layout.cols * cellW);
@@ -390,7 +532,7 @@ function createPhotoStrip(layoutId, imageDataArray) {
         canvas.height = layout.rows * cellH + (layout.rows - 1) * gap + padding * 2;
         const ctx = canvas.getContext("2d");
 
-        ctx.fillStyle = "#ffffff";
+        ctx.fillStyle = "#f6f0e3";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         loaded.forEach((img, i) => {
@@ -405,13 +547,32 @@ function createPhotoStrip(layoutId, imageDataArray) {
     });
 }
 
-// ── Gallery (session) ───────────────────────────────────────────────────────
+function createPolaroidFrame(imageData) {
+    return loadImages([imageData]).then(([img]) => {
+        const side = Math.round(img.width * 0.05);
+        const bottom = Math.round(img.width * 0.2);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = img.width + side * 2;
+        canvas.height = img.height + side + bottom;
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#f8f2e4";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        ctx.drawImage(img, side, side, img.width, img.height);
+
+        return canvas.toDataURL("image/png");
+    });
+}
+
+// ── Gallery ─────────────────────────────────────────────────────────────────
 
 function addPhotoToGallery(imageData, label) {
     sessionEmpty.classList.add("hidden");
 
     const photoContainer = document.createElement("div");
     photoContainer.className = "photo-item";
+    photoContainer.style.setProperty("--tilt", `${(Math.random() * 4 - 2).toFixed(2)}deg`);
 
     const checkbox = document.createElement("input");
     checkbox.type = "checkbox";
@@ -449,28 +610,7 @@ function addPhotoToGallery(imageData, label) {
     gallery.prepend(photoContainer);
 }
 
-async function capturePhoto() {
-    triggerFlash();
-    playShutterSound();
-    const imageData = captureFrame();
-    addPhotoToGallery(imageData);
-}
-
-async function captureWithCountdown() {
-    const seconds = Math.min(60, Math.max(0, parseInt(timerInput.value, 10) || 0));
-    setControlsDisabled(true);
-    try {
-        await showCountdown(seconds);
-        await capturePhoto();
-    } catch (err) {
-        console.error(err);
-        alert("Could not capture photo. Make sure the camera is ready.");
-    } finally {
-        setControlsDisabled(false);
-    }
-}
-
-// ── Photo strip mode ────────────────────────────────────────────────────────
+// ── Strip Capture Mode ──────────────────────────────────────────────────────
 
 async function capturePhotoStrip() {
     const layout = STRIP_LAYOUTS[selectedStripLayout];
@@ -487,7 +627,7 @@ async function capturePhotoStrip() {
         }
 
         const stripData = await createPhotoStrip(selectedStripLayout, shots);
-        addPhotoToGallery(stripData, `${layout.label} strip`);
+        openStickerEditor(stripData);
     } catch (err) {
         console.error(err);
         alert("Could not create photo strip. Make sure the camera is ready.");
@@ -496,24 +636,17 @@ async function capturePhotoStrip() {
     }
 }
 
-captureBtn.addEventListener("click", () => {
-    if (isCapturing) return;
-    captureWithCountdown();
-});
-
 stripBtn.addEventListener("click", () => {
     if (isCapturing) return;
     capturePhotoStrip();
 });
 
-// ── Download ─────────────────────────────────────────────────────────────────
+// ── Downloads & Batch ───────────────────────────────────────────────────────
 
 function saveAndDownloadImage(imageData, filename, button) {
     button.disabled = true;
     button.textContent = "Downloading...";
-
     downloadBlob(imageData, filename);
-
     button.textContent = "✅ Downloaded";
     setTimeout(() => {
         button.textContent = "💾 Download";
@@ -530,8 +663,6 @@ function downloadBlob(dataUrl, filename) {
     link.click();
     document.body.removeChild(link);
 }
-
-// ── Batch save ──────────────────────────────────────────────────────────────
 
 selectAllBtn.addEventListener("click", () => {
     const checkboxes = document.querySelectorAll(".photo-checkbox");
@@ -579,8 +710,6 @@ async function saveSelectedImages() {
         updateBatchButton();
     }
 }
-
-// ── Fullscreen ────────────────────────────────────────────────────────────────
 
 fullscreenBtn.addEventListener("click", () => {
     if (!document.fullscreenElement) {

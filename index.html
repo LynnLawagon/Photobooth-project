@@ -3,7 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Photobooth</title>
+    <title>Say Cheese — Vintage Photobooth</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Special+Elite&family=Caveat:wght@600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -11,105 +13,131 @@
 
     <div class="container">
         <header class="app-header">
-            <h1>📸 Photobooth</h1>
+            <div class="bulb-row" aria-hidden="true">
+                <span></span><span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span><span></span>
+            </div>
+            <span class="script-tag">say cheese &amp;</span>
+            <h1>PHOTOBOOTH</h1>
             <button id="fullscreen-btn" class="icon-btn" title="Toggle fullscreen">⛶</button>
         </header>
 
-        <div class="camera-section">
-            <div class="video-wrapper">
-                <video id="video" autoplay muted playsinline></video>
-                <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="polite">
-                    <span id="countdown-number"></span>
-                </div>
-                <div id="sticker-layer" class="sticker-layer"></div>
-            </div>
-
-            <div class="camera-options">
-                <label class="option-label">
-                    Camera
-                    <select id="camera-select">
-                        <option value="">Loading cameras...</option>
-                    </select>
-                </label>
-                <label class="option-label">
-                    Filter
-                    <select id="filter-select">
-                        <option value="none">No Filter</option>
-                        <option value="grayscale">Black &amp; White</option>
-                        <option value="sepia">Sepia</option>
-                        <option value="noir">Noir</option>
-                        <option value="vintage">Vintage</option>
-                        <option value="vivid">Vivid</option>
-                        <option value="cool">Cool Tone</option>
-                        <option value="warm">Warm Tone</option>
-                        <option value="dreamy">Dreamy</option>
-                    </select>
-                </label>
-            </div>
-
-            <div class="stickers-section">
-                <div class="section-header">
-                    <p class="strip-layout-label">Stickers</p>
-                    <button id="clear-stickers-btn" class="btn btn-small">Clear Stickers</button>
-                </div>
-                <div id="sticker-palette" class="sticker-palette">
-                    <button type="button" class="sticker-option" data-emoji="😎">😎</button>
-                    <button type="button" class="sticker-option" data-emoji="❤️">❤️</button>
-                    <button type="button" class="sticker-option" data-emoji="🎉">🎉</button>
-                    <button type="button" class="sticker-option" data-emoji="⭐">⭐</button>
-                    <button type="button" class="sticker-option" data-emoji="👑">👑</button>
-                    <button type="button" class="sticker-option" data-emoji="🎀">🎀</button>
-                    <button type="button" class="sticker-option" data-emoji="🔥">🔥</button>
-                    <button type="button" class="sticker-option" data-emoji="💕">💕</button>
-                    <button type="button" class="sticker-option" data-emoji="🌸">🌸</button>
-                    <button type="button" class="sticker-option" data-emoji="✨">✨</button>
+        <!-- Main Workspace: Camera on Left, Settings + Gallery on Right -->
+        <div class="workspace-grid">
+            <!-- Left Column: Portrait Camera Feed -->
+            <div class="left-column">
+                <div class="camera-section">
+                    <div class="camera-frame">
+                        <div class="video-wrapper">
+                            <video id="video" autoplay muted playsinline></video>
+                            <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="polite">
+                                <span id="countdown-number"></span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
-            <div class="strip-layout-section">
-                <p class="strip-layout-label">Photo Strip Layout</p>
-                <div id="strip-layout-picker" class="strip-layout-picker">
-                    <button type="button" class="strip-option active" data-layout="vertical-4" title="4 photos stacked vertically">
-                        <span class="strip-preview strip-preview-vertical-4"></span>
-                        <span>Vertical 4</span>
-                    </button>
-                    <button type="button" class="strip-option" data-layout="horizontal-4" title="4 photos in a row">
-                        <span class="strip-preview strip-preview-horizontal-4"></span>
-                        <span>Horizontal 4</span>
-                    </button>
-                    <button type="button" class="strip-option" data-layout="grid-2x2" title="4 photos in a 2×2 grid">
-                        <span class="strip-preview strip-preview-grid-2x2"></span>
-                        <span>2×2 Grid</span>
-                    </button>
-                    <button type="button" class="strip-option" data-layout="vertical-3" title="3 photos stacked vertically">
-                        <span class="strip-preview strip-preview-vertical-3"></span>
-                        <span>Vertical 3</span>
-                    </button>
-                    <button type="button" class="strip-option" data-layout="horizontal-3" title="3 photos in a row">
-                        <span class="strip-preview strip-preview-horizontal-3"></span>
-                        <span>Horizontal 3</span>
-                    </button>
-                </div>
-            </div>
+            <!-- Right Column: Camera Settings & Session Gallery stacked -->
+            <div class="right-column">
+                <div class="sidebar-controls">
+                    <div class="camera-options">
+                        <label class="option-label">
+                            Camera
+                            <select id="camera-select">
+                                <option value="">Loading cameras...</option>
+                            </select>
+                        </label>
+                        <label class="option-label">
+                            Film Filter
+                            <select id="filter-select">
+                                <option value="none">Original</option>
+                                <option value="grayscale">Black &amp; White</option>
+                                <option value="sepia">Sepia</option>
+                                <option value="noir">Noir</option>
+                                <option value="vintage" selected>Vintage</option>
+                                <option value="vivid">Vivid</option>
+                                <option value="cool">Cool Tone</option>
+                                <option value="warm">Warm Tone</option>
+                                <option value="dreamy">Dreamy</option>
+                            </select>
+                        </label>
+                    </div>
 
-            <div class="controls">
-                <label class="timer-label">
-                    Timer (sec)
-                    <input type="number" id="timer" min="0" max="60" value="3" placeholder="0">
-                </label>
-                <button id="capture-btn" class="btn btn-primary">⭐ Capture</button>
-                <button id="strip-btn" class="btn btn-secondary">🎞️ Start Strip</button>
+                    <div class="strip-layout-section">
+                        <p class="strip-layout-label">Photo Strip Layout</p>
+                        <div id="strip-layout-picker" class="strip-layout-picker">
+                            <button type="button" class="strip-option active" data-layout="vertical-4" title="4 photos stacked vertically">
+                                <span class="strip-preview sp-vertical-4"><i></i><i></i><i></i><i></i></span>
+                                <span>Classic 4</span>
+                            </button>
+                            <button type="button" class="strip-option" data-layout="polaroid-1" title="Single photo with a Polaroid-style frame">
+                                <span class="strip-preview sp-polaroid-1"><i></i><i></i></span>
+                                <span>Polaroid</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <label class="timer-label">
+                            Timer (sec)
+                            <input type="number" id="timer" min="0" max="60" value="3" placeholder="0">
+                        </label>
+                        <button id="strip-btn" class="btn btn-secondary">🎞️ Start Strip</button>
+                    </div>
+                </div>
+
+                <div class="gallery-section">
+                    <div class="section-header"> 
+                        <h3>Session Gallery</h3>
+                        <button id="select-all-btn" class="btn btn-small">Select All</button>
+                    </div>
+                    <div class="gallery-scroll-area">
+                        <p id="session-empty" class="empty-message">No photos yet — step in and capture one!</p>
+                        <div id="gallery"></div>
+                    </div>
+                    <button id="batch-save-btn" class="batch-save-btn hidden">💾 Download Selected Images</button>
+                </div>
             </div>
         </div>
 
-        <div class="gallery-section">
-            <div class="section-header">
-                <h3>Session Gallery</h3>
-                <button id="select-all-btn" class="btn btn-small">Select All</button>
+       <!-- Post-Capture Sticker Customization Modal -->
+        <div id="sticker-editor-modal" class="sticker-editor-modal hidden">
+            <div class="editor-content-box">
+                <div class="section-header">
+                    <h3>Customize Your Photo with Stickers</h3>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
+                            Zoom: <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1" style="width: 80px; cursor: pointer;">
+                        </label>
+                        <button id="close-editor-btn" class="btn btn-small">Done / Save</button>
+                    </div>
+                </div>
+                <div class="editor-preview-area" id="editor-preview-area">
+                    <div id="zoom-container" style="position: relative; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; transform-origin: center center; transition: transform 0.1s ease-out;">
+                        <img id="editing-image" src="" alt="Captured strip preview">
+                        <div id="sticker-layer" class="sticker-layer"></div>
+                    </div>
+                </div>
+                <div class="stickers-section">
+                    <div class="section-header">
+                        <p class="strip-layout-label">Click a sticker to add:</p>
+                        <button id="clear-stickers-btn" class="btn btn-small">Clear Stickers</button>
+                    </div>
+                    <div id="sticker-palette" class="sticker-palette">
+                        <button type="button" class="sticker-option" data-emoji="😎">😎</button>
+                        <button type="button" class="sticker-option" data-emoji="❤️">❤️</button>
+                        <button type="button" class="sticker-option" data-emoji="🎉">🎉</button>
+                        <button type="button" class="sticker-option" data-emoji="⭐">⭐</button>
+                        <button type="button" class="sticker-option" data-emoji="👑">👑</button>
+                        <button type="button" class="sticker-option" data-emoji="🎀">🎀</button>
+                        <button type="button" class="sticker-option" data-emoji="🔥">🔥</button>
+                        <button type="button" class="sticker-option" data-emoji="💕">💕</button>
+                        <button type="button" class="sticker-option" data-emoji="🌸">🌸</button>
+                        <button type="button" class="sticker-option" data-emoji="✨">✨</button>
+                    </div>
+                </div>
             </div>
-            <p id="session-empty" class="empty-message">No photos yet — capture one to get started!</p>
-            <div id="gallery"></div>
-            <button id="batch-save-btn" class="batch-save-btn hidden">💾 Download Selected Images</button>
         </div>
     </div>
 
