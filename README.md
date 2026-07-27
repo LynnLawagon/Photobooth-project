@@ -1,6 +1,6 @@
 ﻿# Photobooth Project
 
-A web-based photobooth experience with a live camera preview, vintage-style filters, customizable photo strips, sticker editing, and a session gallery for downloading your captures.
+A web-based photobooth experience with a live camera preview, vintage-style filters, customizable photo strips, and a session gallery for downloading your captures.
 
 ## Features
 
@@ -10,7 +10,6 @@ A web-based photobooth experience with a live camera preview, vintage-style filt
   - Classic 4-photo strip
   - Polaroid-style single frame
 - Film-style filters including grayscale, sepia, noir, vintage, vivid, cool, warm, and dreamy
-- Sticker placement and editing on the preview before saving
 - Flash and shutter sound effects for a playful photobooth feel
 - Gallery of captured images with preview, delete, select, and batch download options
 - Popup preview for viewing each strip image in a larger format with zoom controls
@@ -49,13 +48,6 @@ Open http://localhost:3000 in your browser and allow camera access when prompted
 4. Click Start Strip.
 5. Pose for each countdown and let the app build your strip.
 
-### Add Stickers
-
-1. Open the sticker editor after your strip is created.
-2. Pick an emoji from the sticker palette.
-3. Drag it into place and resize or rotate it as needed.
-4. Close the editor to save the final image into the gallery.
-
 ### View and Save Photos
 
 - Click any photo in the gallery to open a larger popup preview.
@@ -69,7 +61,7 @@ Open http://localhost:3000 in your browser and allow camera access when prompted
 photobooth-project/
 ├── index.html       # Main UI and modal preview markup
 ├── style.css        # Styling for the app, gallery, and preview popup
-├── script.js        # Camera, filters, stickers, strip creation, and gallery logic
+├── script.js        # Camera, filters, strip creation, and gallery logic
 ├── server.js        # Express static file server
 └── package.json
 `
