@@ -11,6 +11,14 @@
 <body>
     <div id="flash-overlay" aria-hidden="true"></div>
 
+    <div id="image-preview-modal" class="hidden" aria-hidden="true">
+        <div class="preview-backdrop"></div>
+        <div class="preview-dialog" role="dialog" aria-modal="true" aria-label="Image preview">
+            <button id="close-preview-btn" class="preview-close" type="button" aria-label="Close preview">×</button>
+            <img id="preview-image" alt="Preview" />
+        </div>
+    </div>
+
     <div class="container">
         <header class="app-header">
             <div class="bulb-row" aria-hidden="true">
@@ -93,49 +101,10 @@
                         <button id="select-all-btn" class="btn btn-small">Select All</button>
                     </div>
                     <div class="gallery-scroll-area">
-                        <p id="session-empty" class="empty-message">No photos yet — step in and capture one!</p>
+                        <p id="session-empty" class="empty-message">Your photos will appear here.</p>
                         <div id="gallery"></div>
                     </div>
                     <button id="batch-save-btn" class="batch-save-btn hidden">💾 Download Selected Images</button>
-                </div>
-            </div>
-        </div>
-
-       <!-- Post-Capture Sticker Customization Modal -->
-        <div id="sticker-editor-modal" class="sticker-editor-modal hidden">
-            <div class="editor-content-box">
-                <div class="section-header">
-                    <h3>Customize Your Photo with Stickers</h3>
-                    <div style="display: flex; gap: 8px; align-items: center;">
-                        <label style="font-size: 0.8rem; display: flex; align-items: center; gap: 4px;">
-                            Zoom: <input type="range" id="zoom-slider" min="1" max="3" step="0.1" value="1" style="width: 80px; cursor: pointer;">
-                        </label>
-                        <button id="close-editor-btn" class="btn btn-small">Done / Save</button>
-                    </div>
-                </div>
-                <div class="editor-preview-area" id="editor-preview-area">
-                    <div id="zoom-container" style="position: relative; display: flex; justify-content: center; align-items: center; width: 100%; height: 100%; transform-origin: center center; transition: transform 0.1s ease-out;">
-                        <img id="editing-image" src="" alt="Captured strip preview">
-                        <div id="sticker-layer" class="sticker-layer"></div>
-                    </div>
-                </div>
-                <div class="stickers-section">
-                    <div class="section-header">
-                        <p class="strip-layout-label">Click a sticker to add:</p>
-                        <button id="clear-stickers-btn" class="btn btn-small">Clear Stickers</button>
-                    </div>
-                    <div id="sticker-palette" class="sticker-palette">
-                        <button type="button" class="sticker-option" data-emoji="😎">😎</button>
-                        <button type="button" class="sticker-option" data-emoji="❤️">❤️</button>
-                        <button type="button" class="sticker-option" data-emoji="🎉">🎉</button>
-                        <button type="button" class="sticker-option" data-emoji="⭐">⭐</button>
-                        <button type="button" class="sticker-option" data-emoji="👑">👑</button>
-                        <button type="button" class="sticker-option" data-emoji="🎀">🎀</button>
-                        <button type="button" class="sticker-option" data-emoji="🔥">🔥</button>
-                        <button type="button" class="sticker-option" data-emoji="💕">💕</button>
-                        <button type="button" class="sticker-option" data-emoji="🌸">🌸</button>
-                        <button type="button" class="sticker-option" data-emoji="✨">✨</button>
-                    </div>
                 </div>
             </div>
         </div>

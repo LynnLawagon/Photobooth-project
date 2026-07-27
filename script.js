@@ -13,34 +13,29 @@ const selectAllBtn = document.getElementById("select-all-btn");
 const batchSaveBtn = document.getElementById("batch-save-btn");
 const fullscreenBtn = document.getElementById("fullscreen-btn");
 const sessionEmpty = document.getElementById("session-empty");
+const previewModal = document.getElementById("image-preview-modal");
+const previewImage = document.getElementById("preview-image");
+const closePreviewBtn = document.getElementById("close-preview-btn");
 
-// Sticker Editor Elements
+// Sticker & Editor DOM Elements
 const stickerEditorModal = document.getElementById("sticker-editor-modal");
 const editorPreviewArea = document.getElementById("editor-preview-area");
 const editingImage = document.getElementById("editing-image");
 const closeEditorBtn = document.getElementById("close-editor-btn");
-const stickerLayer = document.getElementById("sticker-layer");
 const stickerPalette = document.getElementById("sticker-palette");
 const clearStickersBtn = document.getElementById("clear-stickers-btn");
-
-//zoom controls
-const zoomSlider = document.getElementById('zoom-slider');
-const zoomContainer = document.getElementById('zoom-container');
+const stickerLayer = document.getElementById("sticker-layer");
 
 let currentStream = null;
 let isCapturing = false;
 let selectedStripLayout = "vertical-4";
-let stickerIdCounter = 0;
-let stickers = []; 
 let activeRawStripData = null;
+let pendingPreviewContainer = null;
 
-//zoom controls
-if (zoomSlider && zoomContainer) {
-    zoomSlider.addEventListener('input', (e) => {
-        const scale = e.target.value;
-        zoomContainer.style.transform = `scale(${scale})`;
-    });
-}
+// Sticker State Arrays & Counters
+let stickers = [];
+let stickerIdCounter = 0;
+
 
 const STRIP_LAYOUTS = {
     "vertical-4": { shots: 4, cols: 1, rows: 4, label: "Classic 4" },
@@ -67,6 +62,13 @@ const FILTERS = {
 // ── Camera ──────────────────────────────────────────────────────────────────
 
 async function initCameras() {
+    if (!navigator.mediaDevices?.getUserMedia) {
+        console.error("Camera API not supported in this browser.");
+        cameraSelect.innerHTML = `<option value="">Camera unsupported</option>`;
+        alert("This browser does not support camera access.");
+        return;
+    }
+
     try {
         const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
         tempStream.getTracks().forEach((t) => t.stop());
@@ -147,14 +149,27 @@ stripLayoutPicker.addEventListener("click", (e) => {
 
 function openStickerEditor(stripDataUrl) {
     activeRawStripData = stripDataUrl;
-    editingImage.src = stripDataUrl;
+
+    if (editingImage) {
+        editingImage.src = stripDataUrl;
+    }
+
     clearStickers();
-    stickerEditorModal.classList.remove("hidden");
+
+    if (stickerEditorModal) {
+        pendingPreviewContainer = addOrUpdatePreview(stripDataUrl, "Captured strip");
+        stickerEditorModal.classList.remove("hidden");
+        return;
+    }
+
+    addPhotoToGallery(stripDataUrl, "Captured strip");
 }
 
-closeEditorBtn.addEventListener("click", () => {
-    burnStickersAndSave();
-});
+if (closeEditorBtn) {
+    closeEditorBtn.addEventListener("click", () => {
+        burnStickersAndSave();
+    });
+}
 
 function addSticker(emoji) {
     const id = `sticker-${stickerIdCounter++}`;
@@ -349,9 +364,21 @@ function burnStickersAndSave() {
         });
 
         const finalDataUrl = canvas.toDataURL("image/png");
-        stickerEditorModal.classList.add("hidden");
+        if (stickerEditorModal) {
+            stickerEditorModal.classList.add("hidden");
+        }
         const layout = STRIP_LAYOUTS[selectedStripLayout];
-        addPhotoToGallery(finalDataUrl, `${layout.label} strip`);
+
+        if (pendingPreviewContainer) {
+            const imgElement = pendingPreviewContainer.querySelector("img");
+            const label = `${layout.label} strip`;
+            imgElement.src = finalDataUrl;
+            imgElement.alt = label;
+            pendingPreviewContainer.imageData = finalDataUrl;
+            pendingPreviewContainer = null;
+        } else {
+            addPhotoToGallery(finalDataUrl, `${layout.label} strip`);
+        }
     };
     img.src = activeRawStripData;
 }
@@ -567,8 +594,63 @@ function createPolaroidFrame(imageData) {
 
 // ── Gallery ─────────────────────────────────────────────────────────────────
 
+function addOrUpdatePreview(imageData, label) {
+    if (pendingPreviewContainer) {
+        const imgElement = pendingPreviewContainer.querySelector("img");
+        imgElement.src = imageData;
+        imgElement.alt = label || "Captured photo";
+        pendingPreviewContainer.imageData = imageData;
+        return pendingPreviewContainer;
+    }
+
+    const container = addPhotoToGallery(imageData, label);
+    pendingPreviewContainer = container;
+    return container;
+}
+
+function updateEmptyState() {
+    const hasPhotos = gallery.querySelector(".photo-item") !== null;
+    sessionEmpty.classList.toggle("hidden", hasPhotos);
+    sessionEmpty.textContent = hasPhotos
+        ? "Select photos to download or remove them."
+        : "Your photos will appear here.";
+}
+
+function openPreview(imageData) {
+    if (!previewModal || !previewImage) return;
+    previewImage.src = imageData;
+    previewImage.alt = "Captured photo preview";
+    previewModal.classList.remove("hidden");
+    previewModal.setAttribute("aria-hidden", "false");
+}
+
+function closePreview() {
+    if (!previewModal || !previewImage) return;
+    previewModal.classList.add("hidden");
+    previewModal.setAttribute("aria-hidden", "true");
+    previewImage.removeAttribute("src");
+}
+
+if (previewModal) {
+    previewModal.addEventListener("click", (e) => {
+        if (e.target.classList.contains("preview-backdrop") || e.target === previewModal) {
+            closePreview();
+        }
+    });
+}
+
+if (closePreviewBtn) {
+    closePreviewBtn.addEventListener("click", closePreview);
+}
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && previewModal && !previewModal.classList.contains("hidden")) {
+        closePreview();
+    }
+});
+
 function addPhotoToGallery(imageData, label) {
-    sessionEmpty.classList.add("hidden");
+    updateEmptyState();
 
     const photoContainer = document.createElement("div");
     photoContainer.className = "photo-item";
@@ -584,14 +666,18 @@ function addPhotoToGallery(imageData, label) {
     deleteBtn.textContent = "✕";
     deleteBtn.title = "Remove from session";
     deleteBtn.addEventListener("click", () => {
+        if (pendingPreviewContainer === photoContainer) {
+            pendingPreviewContainer = null;
+        }
         photoContainer.remove();
-        if (!gallery.children.length) sessionEmpty.classList.remove("hidden");
+        updateEmptyState();
         updateBatchButton();
     });
 
     const img = document.createElement("img");
     img.src = imageData;
     img.alt = label || "Captured photo";
+    img.addEventListener("click", () => openPreview(imageData));
 
     const downloadBtn = document.createElement("button");
     downloadBtn.textContent = "💾 Download";
@@ -608,6 +694,8 @@ function addPhotoToGallery(imageData, label) {
     photoContainer.appendChild(img);
     photoContainer.appendChild(downloadBtn);
     gallery.prepend(photoContainer);
+    updateEmptyState();
+    return photoContainer;
 }
 
 // ── Strip Capture Mode ──────────────────────────────────────────────────────
