@@ -8,11 +8,11 @@
     const INK = "#3B2A1A";
     const NAVY = "#1B2A49";
     const CREAM = "#FFF3D6";
-    const YELLOW_TEXT = "#F9C80E";
+    const YELLOW_TEXT = "#a647dd";
     const BASE_YELLOW = "#F9C80E";
-    const BRICK_COLORS = ["#D7261E", "#F28C28", "#F9C80E", "#2E9E4F", "#1F6FD0"];
+    const BRICK_COLORS = ["#D7261E", "#F28C28", "#d1a70e", "#2E9E4F", "#1F6FD0"];
     const FRAME_COLORS = ["#D7261E", "#1F6FD0", "#2E9E4F", "#F28C28"];
-    const WORD_COLORS = ["#F28C28", "#F26B8A", "#F9C80E", "#EF5B3C", "#2F8FDD"];
+    const WORD_COLORS = ["#F28C28", "#e2cb46", "#45a1e3", "#35e263", "#dd5757"];
 
     const TOP_BAND = 64;
     const WINDOW = { x: 40, w: 320, h: 224, gap: 28, border: 10, radius: 8 };
