@@ -9,7 +9,7 @@
     const INK = "#3B2A1A";
     const NAVY = "#1B2A49";
     const CREAM = "#FFF3D6";
-    const BASE_YELLOW = "rgb(188, 166, 208)";
+    const BASE_YELLOW = "rgb(229, 249, 99)";
     const BRICK_COLORS = ["#D7261E", "#F28C28", "#F9C80E", "#2E9E4F", "#1F6FD0"];
     const FRAME_COLORS = ["#D7261E", "#1F6FD0", "#2E9E4F", "#F28C28"];
 
@@ -111,35 +111,29 @@
     }
 
     // Draws the entire footer image without cropping or stretching.
+
     function drawFooterImage(ctx, footerImg) {
-        const footerRatio = footerImg.width / footerImg.height;
-        const areaRatio = BASE_W / LABEL_H;
+        ctx.save();
 
-        let drawWidth;
-        let drawHeight;
+        // Remove the old footer-area cropping.
+        // Use the entire image and preserve its proportions.
+        const scale = Math.min(
+            BASE_W / footerImg.width,
+            (BASE_H - LABEL_TOP) / footerImg.height
+        );
 
-        if (footerRatio > areaRatio) {
-            drawWidth = BASE_W;
-            drawHeight = BASE_W / footerRatio;
-        } else {
-            drawHeight = LABEL_H;
-            drawWidth = LABEL_H * footerRatio;
-        }
+        const drawWidth = footerImg.width * scale;
+        const drawHeight = footerImg.height * scale;
 
         const drawX = (BASE_W - drawWidth) / 2;
-        const drawY = LABEL_TOP + (LABEL_H - drawHeight) / 2;
-
-        ctx.save();
-        ctx.beginPath();
-        ctx.rect(0, LABEL_TOP, BASE_W, LABEL_H);
-        ctx.clip();
-
-        // Fill unused space with the existing background color.
-        ctx.fillStyle = BASE_YELLOW;
-        ctx.fillRect(0, LABEL_TOP, BASE_W, LABEL_H);
+        const drawY = LABEL_TOP + (BASE_H - LABEL_TOP - drawHeight) / 2;
 
         ctx.drawImage(
             footerImg,
+            0,
+            0,
+            footerImg.width,
+            footerImg.height,
             drawX,
             drawY,
             drawWidth,
@@ -148,6 +142,7 @@
 
         ctx.restore();
     }
+
 
     function drawWindows(ctx, images) {
         for (let i = 0; i < 4; i++) {
