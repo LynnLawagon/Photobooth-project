@@ -112,37 +112,29 @@
 
     // Draws the entire footer image without cropping or stretching.
 
+
     function drawFooterImage(ctx, footerImg) {
+        const footerY = LABEL_TOP;
+        const footerHeight = BASE_H - footerY;
+
         ctx.save();
 
-        // Remove the old footer-area cropping.
-        // Use the entire image and preserve its proportions.
-        const scale = Math.min(
-            BASE_W / footerImg.width,
-            (BASE_H - LABEL_TOP) / footerImg.height
-        );
-
-        const drawWidth = footerImg.width * scale;
-        const drawHeight = footerImg.height * scale;
-
-        const drawX = (BASE_W - drawWidth) / 2;
-        const drawY = LABEL_TOP + (BASE_H - LABEL_TOP - drawHeight) / 2;
-
+        // Fill the entire footer width and height.
+        // The image may stretch slightly to fit the strip.
         ctx.drawImage(
             footerImg,
             0,
             0,
             footerImg.width,
             footerImg.height,
-            drawX,
-            drawY,
-            drawWidth,
-            drawHeight
+            0,
+            footerY,
+            BASE_W,
+            footerHeight
         );
 
         ctx.restore();
     }
-
 
     function drawWindows(ctx, images) {
         for (let i = 0; i < 4; i++) {
