@@ -310,7 +310,7 @@ select, input[type="number"] {
 
 .strip-layout-picker {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
     gap: 8px;
     margin-top: 4px;
 }

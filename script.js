@@ -44,12 +44,15 @@ let stickerIdCounter = 0;
 
 const STRIP_LAYOUTS = {
     "vertical-4": { shots: 4, cols: 1, rows: 4, label: "Classic 4" },
-    "polaroid-1": { shots: 1, cols: 1, rows: 1, label: "Polaroid" }
+    "polaroid-1": { shots: 1, cols: 1, rows: 1, label: "Polaroid" },
+    "brick-4": { shots: 4, cols: 1, rows: 4, label: "Brick 4" }
 };
 
 const LAYOUT_ASPECT = {
     "vertical-4": 3 / 4,
-    "polaroid-1": 1
+    "polaroid-1": 1,
+    // matches the photo windows of the brick template (see brick-template.js)
+    "brick-4": window.createBrickStrip ? window.createBrickStrip.photoAspect : 300 / 204
 };
 
 const FILTERS = {
@@ -541,6 +544,10 @@ function loadImages(imageDataArray) {
 function createPhotoStrip(layoutId, imageDataArray) {
     if (layoutId === "polaroid-1") {
         return createPolaroidFrame(imageDataArray[0]);
+    }
+
+    if (layoutId === "brick-4") {
+        return window.createBrickStrip(imageDataArray);
     }
 
     const layout = STRIP_LAYOUTS[layoutId];
