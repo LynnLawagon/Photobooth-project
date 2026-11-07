@@ -400,6 +400,21 @@ function addSticker(emoji) {
     stickerLayer.appendChild(el);
 }
 
+// Tap/click an empty part of the strip to move the selected icon there.
+if (editorPreviewArea) {
+    editorPreviewArea.addEventListener("pointerdown", (event) => {
+        if (event.target.closest(".sticker")) return;
+        const active = stickers.find((sticker) => sticker.el.classList.contains("active"));
+        if (!active) return;
+
+        const rect = editorPreviewArea.getBoundingClientRect();
+        active.xPercent = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
+        active.yPercent = Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100));
+        active.el.style.left = `${active.xPercent}%`;
+        active.el.style.top = `${active.yPercent}%`;
+    });
+}
+
 function setActiveSticker(targetSticker) {
     stickers.forEach((s) => s.el.classList.toggle("active", s === targetSticker));
 }

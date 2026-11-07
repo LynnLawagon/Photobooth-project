@@ -21,7 +21,7 @@
     const LABEL_TOP = 1100;
     const LABEL_H = 140;
     
-    const FONT_FAMILY = '"Fredoka", "Baloo 2", "Arial Rounded MT Bold", system-ui, sans-serif';
+    const FONT_FAMILY = '"Little One", "Arial Rounded MT Bold", system-ui, sans-serif';
 
     function loadImage(src) {
         return new Promise((resolve, reject) => {

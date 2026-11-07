@@ -1,3 +1,11 @@
+@font-face {
+    font-family: "Little One";
+    src: url("./assets/LittleOneDemoRegular.ttf") format("truetype");
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+}
+
 :root {
   --bg: #ede4d3;
   --bg-2: #e2d6bd;
@@ -541,9 +549,12 @@ select, input[type="number"] {
 }
 
 .editor-scroll {
-    flex: 1;
-    min-height: 0;
+    flex: 1 1 auto;
+    min-height: 180px;
+    height: 48vh;
+    max-height: 58vh;
     overflow-y: auto;
+    overflow-x: hidden;
     display: flex;
     justify-content: center;
     background: var(--paper-2);
@@ -645,4 +656,30 @@ select, input[type="number"] {
     font-size: 0.75rem;
     color: var(--ink-soft);
     text-align: center;
+}
+/* Keep the long Brick 4 strip fully reachable inside the icon editor. */
+#editor-preview-area {
+    width: min(240px, 100%);
+    flex: 0 0 auto;
+}
+
+#editing-image {
+    width: 100%;
+    height: auto;
+}
+
+@media (max-width: 520px) {
+    .editor-dialog {
+        max-height: 96dvh;
+        padding: 10px;
+    }
+
+    .editor-scroll {
+        height: 44dvh;
+        max-height: 52dvh;
+    }
+
+    .sticker-palette {
+        grid-template-columns: repeat(6, 1fr);
+    }
 }
