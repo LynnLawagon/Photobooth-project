@@ -8,7 +8,7 @@
     const INK = "#3B2A1A";
     const NAVY = "#1B2A49";
     const CREAM = "#FFF3D6";
-    const BASE_YELLOW = "#F9C80E";
+    const BASE_YELLOW = "rgb(188, 166, 208)";
     const BRICK_COLORS = ["#D7261E", "#F28C28", "#F9C80E", "#2E9E4F", "#1F6FD0"];
     const FRAME_COLORS = ["#D7261E", "#1F6FD0", "#2E9E4F", "#F28C28"];
     // AWKND letters in order: orange, yellow, blue, green, red
