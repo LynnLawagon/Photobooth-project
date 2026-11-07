@@ -19,7 +19,7 @@
     const LABEL_H = 140;
 
     // Provide the path or Data URL of your custom bottom image here
-    const FOOTER_IMAGE_SRC = "C:\\Users\\USER\\Web development\\Photobooth project\\assets\\image.png"; 
+    const FOOTER_IMAGE_SRC = "assets/image.png"; 
 
     function loadImage(src) {
         return new Promise((resolve, reject) => {
