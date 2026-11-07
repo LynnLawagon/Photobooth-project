@@ -42,6 +42,161 @@ let stickers = [];
 let stickerIdCounter = 0;
 
 
+// ── Persistence (localStorage) ──────────────────────────────────────────────
+// Settings and captured strips survive an accidental refresh. Strips are saved as
+// reduced-size JPEGs so several of them fit inside the browser's ~5 MB limit.
+
+const STORAGE_KEYS = {
+    settings: "photobooth:settings:v1",
+    gallery: "photobooth:gallery:v1"
+};
+const MAX_STORED_STRIPS = 8;
+const STORED_MAX_WIDTH = 720;
+const STORED_JPEG_QUALITY = 0.85;
+
+let isRestoringGallery = false;
+let persistTimer = null;
+let isPersisting = false;
+let persistAgain = false;
+
+function storageGet(key) {
+    try {
+        const raw = localStorage.getItem(key);
+        return raw ? JSON.parse(raw) : null;
+    } catch (_) {
+        return null;
+    }
+}
+
+function storageSet(key, value) {
+    try {
+        localStorage.setItem(key, JSON.stringify(value));
+        return true;
+    } catch (_) {
+        return false;
+    }
+}
+
+function saveSettings() {
+    storageSet(STORAGE_KEYS.settings, {
+        layout: selectedStripLayout,
+        filter: filterSelect.value,
+        timer: timerInput.value,
+        camera: cameraSelect.value || ""
+    });
+}
+
+function loadSettings() {
+    return storageGet(STORAGE_KEYS.settings) || {};
+}
+
+function restoreSettings() {
+    const saved = loadSettings();
+
+    if (saved.filter && filterSelect.querySelector(`option[value="${saved.filter}"]`)) {
+        filterSelect.value = saved.filter;
+    }
+
+    if (saved.timer !== undefined && saved.timer !== "") {
+        const t = parseInt(saved.timer, 10);
+        if (!Number.isNaN(t)) timerInput.value = Math.min(60, Math.max(0, t));
+    }
+
+    if (saved.layout && STRIP_LAYOUTS[saved.layout]) {
+        selectedStripLayout = saved.layout;
+        stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
+            btn.classList.toggle("active", btn.dataset.layout === selectedStripLayout);
+        });
+    }
+}
+
+function compressForStorage(dataUrl) {
+    return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+            const scale = Math.min(1, STORED_MAX_WIDTH / img.width);
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(img.width * scale);
+            canvas.height = Math.round(img.height * scale);
+            const ctx = canvas.getContext("2d");
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            resolve(canvas.toDataURL("image/jpeg", STORED_JPEG_QUALITY));
+        };
+        img.onerror = () => resolve(null);
+        img.src = dataUrl;
+    });
+}
+
+function scheduleGalleryPersist() {
+    if (isRestoringGallery) return;
+    clearTimeout(persistTimer);
+    persistTimer = setTimeout(persistGallery, 300);
+}
+
+async function persistGallery() {
+    if (isPersisting) {
+        persistAgain = true;
+        return;
+    }
+    isPersisting = true;
+
+    try {
+        // gallery lists newest first
+        const items = Array.from(gallery.querySelectorAll(".photo-item")).slice(0, MAX_STORED_STRIPS);
+        const entries = [];
+
+        for (const el of items) {
+            if (!el.imageData) continue;
+            if (!el.storedData || el.storedSource !== el.imageData) {
+                el.storedData = await compressForStorage(el.imageData);
+                el.storedSource = el.imageData;
+            }
+            if (el.storedData) {
+                entries.push({ data: el.storedData, label: el.querySelector("img")?.alt || "" });
+            }
+        }
+
+        // If the browser's storage is full, drop the oldest strips until it fits.
+        while (entries.length && !storageSet(STORAGE_KEYS.gallery, entries)) {
+            entries.pop();
+        }
+        if (!entries.length) {
+            try { localStorage.removeItem(STORAGE_KEYS.gallery); } catch (_) {}
+        }
+    } finally {
+        isPersisting = false;
+        if (persistAgain) {
+            persistAgain = false;
+            scheduleGalleryPersist();
+        }
+    }
+}
+
+function restoreGallery() {
+    const saved = storageGet(STORAGE_KEYS.gallery);
+    if (!Array.isArray(saved) || !saved.length) return;
+
+    isRestoringGallery = true;
+    try {
+        // saved newest-first; addPhotoToGallery prepends, so add oldest first
+        for (let i = saved.length - 1; i >= 0; i--) {
+            const entry = saved[i];
+            if (!entry || typeof entry.data !== "string" || !entry.data.startsWith("data:image/")) continue;
+            const container = addPhotoToGallery(entry.data, entry.label || "Saved strip");
+            container.storedData = entry.data;
+            container.storedSource = entry.data;
+        }
+    } finally {
+        isRestoringGallery = false;
+    }
+}
+
+function imageExtension(dataUrl) {
+    return typeof dataUrl === "string" && dataUrl.startsWith("data:image/jpeg") ? "jpg" : "png";
+}
+
 const STRIP_LAYOUTS = {
     "vertical-4": { shots: 4, cols: 1, rows: 4, label: "Classic 4" },
     "polaroid-1": { shots: 1, cols: 1, rows: 1, label: "Polaroid" },
@@ -91,7 +246,13 @@ async function initCameras() {
             : `<option value="">No camera found</option>`;
 
         if (cameras.length) {
-            await startCamera(cameras[0].deviceId);
+            const savedCamera = loadSettings().camera;
+            const startId = cameras.some((c) => c.deviceId === savedCamera)
+                ? savedCamera
+                : cameras[0].deviceId;
+            cameraSelect.value = startId;
+            await startCamera(startId);
+            saveSettings();
         }
     } catch (err) {
         console.error("Camera init error:", err);
@@ -123,6 +284,7 @@ async function startCamera(deviceId) {
 
 cameraSelect.addEventListener("change", () => {
     if (cameraSelect.value) startCamera(cameraSelect.value);
+    saveSettings();
 });
 
 // ── Filters ─────────────────────────────────────────────────────────────────
@@ -132,14 +294,23 @@ function updateVideoFilter() {
     video.style.filter = filter.css || "none";
 }
 
-filterSelect.addEventListener("change", updateVideoFilter);
+filterSelect.addEventListener("change", () => {
+    updateVideoFilter();
+    saveSettings();
+});
+
+timerInput.addEventListener("change", saveSettings);
 
 // ── Strip layout picker ─────────────────────────────────────────────────────
 
 function applyLayoutAspect(layoutId) {
     const aspect = LAYOUT_ASPECT[layoutId] || 0.75;
     const videoWrapper = document.querySelector(".video-wrapper");
-    if (videoWrapper) videoWrapper.style.aspectRatio = String(aspect);
+    if (videoWrapper) {
+        // The CSS sizes the box from --aspect so its shape always matches the captured photo.
+        videoWrapper.style.setProperty("--aspect", String(aspect));
+        videoWrapper.style.aspectRatio = String(aspect);
+    }
 }
 
 stripLayoutPicker.addEventListener("click", (e) => {
@@ -151,6 +322,7 @@ stripLayoutPicker.addEventListener("click", (e) => {
         btn.classList.toggle("active", btn === option);
     });
     applyLayoutAspect(selectedStripLayout);
+    saveSettings();
 });
 
 // ── Post-Capture Stickers & Editor ──────────────────────────────────────────
@@ -384,6 +556,7 @@ function burnStickersAndSave() {
             imgElement.alt = label;
             pendingPreviewContainer.imageData = finalDataUrl;
             pendingPreviewContainer = null;
+            scheduleGalleryPersist();
         } else {
             addPhotoToGallery(finalDataUrl, `${layout.label} strip`);
         }
@@ -769,6 +942,7 @@ function addPhotoToGallery(imageData, label) {
         photoContainer.remove();
         updateEmptyState();
         updateBatchButton();
+        scheduleGalleryPersist();
     });
 
     const img = document.createElement("img");
@@ -783,7 +957,11 @@ function addPhotoToGallery(imageData, label) {
     photoContainer.imageData = imageData;
 
     downloadBtn.addEventListener("click", () =>
-        saveAndDownloadImage(imageData, `photobooth_${Date.now()}.png`, downloadBtn)
+        saveAndDownloadImage(
+            photoContainer.imageData,
+            `photobooth_${Date.now()}.${imageExtension(photoContainer.imageData)}`,
+            downloadBtn
+        )
     );
 
     photoContainer.appendChild(checkbox);
@@ -792,6 +970,7 @@ function addPhotoToGallery(imageData, label) {
     photoContainer.appendChild(downloadBtn);
     gallery.prepend(photoContainer);
     updateEmptyState();
+    scheduleGalleryPersist();
     return photoContainer;
 }
 
@@ -881,7 +1060,7 @@ async function saveSelectedImages() {
     try {
         const timestamp = Date.now();
         selected.forEach((container, index) => {
-            const filename = `photobooth_batch_${timestamp}_${index + 1}.png`;
+            const filename = `photobooth_batch_${timestamp}_${index + 1}.${imageExtension(container.imageData)}`;
             downloadBlob(container.imageData, filename);
         });
 
@@ -910,6 +1089,8 @@ document.addEventListener("fullscreenchange", () => {
 
 // ── Init ──────────────────────────────────────────────────────────────────────
 
+restoreSettings();
 updateVideoFilter();
 applyLayoutAspect(selectedStripLayout);
+restoreGallery();
 initCameras();

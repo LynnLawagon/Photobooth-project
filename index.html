@@ -26,6 +26,43 @@
         </div>
     </div>
 
+    <!-- Icon / sticker editor: opens after each strip is captured -->
+    <div id="sticker-editor-modal" class="hidden">
+        <div class="editor-backdrop"></div>
+        <div class="editor-dialog" role="dialog" aria-modal="true" aria-label="Add icons to your strip">
+            <div class="editor-header">
+                <h3>Add icons</h3>
+                <button id="clear-stickers-btn" class="btn btn-small" type="button">Clear icons</button>
+            </div>
+            <div class="editor-scroll">
+                <div id="editor-preview-area">
+                    <img id="editing-image" alt="Strip being edited" draggable="false">
+                    <div id="sticker-layer"></div>
+                </div>
+            </div>
+            <div id="sticker-palette" class="sticker-palette" aria-label="Icons">
+                <button type="button" class="sticker-option" data-emoji="⭐" aria-label="Star">⭐</button>
+                <button type="button" class="sticker-option" data-emoji="❤️" aria-label="Heart">❤️</button>
+                <button type="button" class="sticker-option" data-emoji="🌈" aria-label="Rainbow">🌈</button>
+                <button type="button" class="sticker-option" data-emoji="🧱" aria-label="Brick">🧱</button>
+                <button type="button" class="sticker-option" data-emoji="🚀" aria-label="Rocket">🚀</button>
+                <button type="button" class="sticker-option" data-emoji="🦖" aria-label="Dinosaur">🦖</button>
+                <button type="button" class="sticker-option" data-emoji="🎈" aria-label="Balloon">🎈</button>
+                <button type="button" class="sticker-option" data-emoji="✨" aria-label="Sparkles">✨</button>
+                <button type="button" class="sticker-option" data-emoji="😊" aria-label="Smile">😊</button>
+                <button type="button" class="sticker-option" data-emoji="🙏" aria-label="Praying hands">🙏</button>
+                <button type="button" class="sticker-option" data-emoji="🕊️" aria-label="Dove">🕊️</button>
+                <button type="button" class="sticker-option" data-emoji="🎉" aria-label="Party popper">🎉</button>
+                <button type="button" class="sticker-option" data-emoji="🦁" aria-label="Lion">🦁</button>
+                <button type="button" class="sticker-option" data-emoji="🎵" aria-label="Music note">🎵</button>
+                <button type="button" class="sticker-option" data-emoji="🌟" aria-label="Glowing star">🌟</button>
+                <button type="button" class="sticker-option" data-emoji="👑" aria-label="Crown">👑</button>
+            </div>
+            <p class="editor-hint">Tap an icon to add it. Drag to move, ⤢ to resize, ↻ to rotate, ✕ to remove.</p>
+            <button id="close-editor-btn" class="btn btn-secondary" type="button">Done</button>
+        </div>
+    </div>
+
     <div class="container">
         <header class="app-header">
             <div class="bulb-row" aria-hidden="true">
