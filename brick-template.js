@@ -16,8 +16,8 @@
     const TOP_BAND = 64;
     const WINDOW = { x: 40, w: 320, h: 224, gap: 28, border: 10, radius: 8 };
     const WINDOWS_TOP = TOP_BAND + 28;
-    const LABEL_TOP = 1100;
-    const LABEL_H = 140;
+    const LABEL_TOP = WINDOWS_TOP + 4 * WINDOW.h + 3 * WINDOW.gap + 12;
+    const LABEL_H = BASE_H - LABEL_TOP;
 
     const FOOTER_IMAGE_SRC = "assets/image.png";
 
@@ -114,13 +114,12 @@
 
 
     function drawFooterImage(ctx, footerImg) {
+        ctx.save();
+
+        // Full-width footer, directly below the last photo.
         const footerY = LABEL_TOP;
         const footerHeight = BASE_H - footerY;
 
-        ctx.save();
-
-        // Fill the entire footer width and height.
-        // The image may stretch slightly to fit the strip.
         ctx.drawImage(
             footerImg,
             0,
