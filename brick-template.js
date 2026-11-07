@@ -16,7 +16,7 @@
     const TOP_BAND = 64;
     const WINDOW = { x: 40, w: 320, h: 224, gap: 28, border: 10, radius: 8 };
     const WINDOWS_TOP = TOP_BAND + 28;
-    const LABEL_TOP = WINDOWS_TOP + 4 * WINDOW.h + 3 * WINDOW.gap - 5;
+    const LABEL_TOP = WINDOWS_TOP + 4 * WINDOW.h + 3 * WINDOW.gap - 6;
     const LABEL_H = BASE_H - LABEL_TOP;
 
     const FOOTER_IMAGE_SRC = "assets/image.png";
