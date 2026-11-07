@@ -1,5 +1,5 @@
 // Brick photostrip template — "Kid's AWKND"
-// Draws a toy-brick style strip (4 photo windows) and exposes window.createBrickStrip(images).
+// Draws a toy-brick style strip (4 photo windows) with a custom bottom footer image.
 (function () {
     const BASE_W = 400;
     const BASE_H = 1240;
@@ -11,21 +11,20 @@
     const BASE_YELLOW = "rgb(188, 166, 208)";
     const BRICK_COLORS = ["#D7261E", "#F28C28", "#F9C80E", "#2E9E4F", "#1F6FD0"];
     const FRAME_COLORS = ["#D7261E", "#1F6FD0", "#2E9E4F", "#F28C28"];
-    // AWKND letters in order: orange, yellow, blue, green, red
-    const WORD_COLORS = ["#F28C28", "#F9C80E", "#2F8FDD", "#2E9E4F", "#E8332B"];
-    const KIDS_COLOR = "#9B5DE5"; // "KID'S" in purple
 
     const TOP_BAND = 64;
     const WINDOW = { x: 40, w: 320, h: 224, gap: 28, border: 10, radius: 8 };
     const WINDOWS_TOP = TOP_BAND + 28;
     const LABEL_TOP = 1100;
     const LABEL_H = 140;
-    
-    const FONT_FAMILY = '"Little One", "Arial Rounded MT Bold", system-ui, sans-serif';
+
+    // Provide the path or Data URL of your custom bottom image here
+    const FOOTER_IMAGE_SRC = "path/to/your/image.png"; 
 
     function loadImage(src) {
         return new Promise((resolve, reject) => {
             const img = new Image();
+            img.crossOrigin = "anonymous";
             img.onload = () => resolve(img);
             img.onerror = reject;
             img.src = src;
@@ -129,109 +128,20 @@
         }
     }
 
-    function drawLabel(ctx) {
-        // navy studded plate (same as the original brick design)
-        ctx.fillStyle = NAVY;
-        ctx.fillRect(0, LABEL_TOP, BASE_W, LABEL_H);
-        drawStudGrid(ctx, 0, LABEL_TOP, BASE_W, LABEL_H, 40, 32, "rgba(255,255,255,0.14)", "rgba(0,0,0,0.3)");
-
-        ctx.textAlign = "center";
-        ctx.textBaseline = "middle";
-
-        // small "KID'S" title
+    function drawFooterImage(ctx, footerImg) {
         ctx.save();
-
-        const kidsFont = `700 26px ${FONT_FAMILY}`;
-        const apostropheFont = 'bold 20px Arial, sans-serif';
-
-        ctx.textAlign = "left";
-        ctx.textBaseline = "middle";
-
-        // Measure each part to center the complete word
-        ctx.font = kidsFont;
-        const kidWidth = ctx.measureText("KID").width;
-        const sWidth = ctx.measureText("S").width;
-
-        ctx.font = apostropheFont;
-        const apostropheWidth = ctx.measureText("'").width;
-
-        const gap = 2;
-        const totalWidth = kidWidth + apostropheWidth + sWidth + gap * 2;
-
-        let startX = (BASE_W - totalWidth) / 2;
-        const titleY = LABEL_TOP + 34;
-
-        // Draw KID
-        ctx.font = kidsFont;
-        ctx.lineJoin = "round";
-        ctx.lineWidth = 5;
-        ctx.strokeStyle = CREAM;
-        ctx.fillStyle = KIDS_COLOR;
-
-        ctx.strokeText("KID", startX, titleY);
-        ctx.fillText("KID", startX, titleY);
-
-        startX += kidWidth + gap;
-
-        // Draw a normal apostrophe
-        ctx.font = apostropheFont;
-        ctx.strokeText("'", startX, titleY - 7);
-        ctx.fillText("'", startX, titleY - 7);
-
-        startX += apostropheWidth + gap;
-
-        // Draw S
-        ctx.font = kidsFont;
-        ctx.strokeText("S", startX, titleY);
-        ctx.fillText("S", startX, titleY);
-
-        ctx.restore();
-
-        // big multicolor "AWKND"
-        const letters = ["A", "W", "K", "N", "D"];
-        const rotations = [-5, 4, -3, 5, -4];
-        const offsets = [0, -3, 2, -2, 1];
-        let size = 64;
-        ctx.save();
-        ctx.font = `700 ${size}px ${FONT_FAMILY}`;
-        const spacing = 2;
-        let widths = letters.map((l) => ctx.measureText(l).width);
-        let total = widths.reduce((a, b) => a + b, 0) + spacing * (letters.length - 1);
-        const maxTotal = 330;
-        if (total > maxTotal) {
-            size = Math.floor(size * (maxTotal / total));
-            ctx.font = `700 ${size}px ${FONT_FAMILY}`;
-            widths = letters.map((l) => ctx.measureText(l).width);
-            total = widths.reduce((a, b) => a + b, 0) + spacing * (letters.length - 1);
-        }
-
-        let cursor = (BASE_W - total) / 2;
-        const cy = LABEL_TOP + 92;
-        ctx.lineJoin = "round";
-        ctx.lineWidth = 6;
-        letters.forEach((letter, i) => {
-            const cx = cursor + widths[i] / 2;
-            ctx.save();
-            ctx.translate(cx, cy + offsets[i]);
-            ctx.rotate((rotations[i] * Math.PI) / 180);
-            ctx.strokeStyle = CREAM;
-            ctx.strokeText(letter, 0, 0);
-            ctx.fillStyle = WORD_COLORS[i];
-            ctx.fillText(letter, 0, 0);
-            ctx.restore();
-            cursor += widths[i] + spacing;
-        });
+        ctx.beginPath();
+        ctx.rect(0, LABEL_TOP, BASE_W, LABEL_H);
+        ctx.clip();
+        drawCover(ctx, footerImg, 0, LABEL_TOP, BASE_W, LABEL_H);
         ctx.restore();
     }
 
-    async function createBrickStrip(imageDataArray) {
-        try {
-            if (document.fonts && document.fonts.load) {
-                await document.fonts.load(`700 64px ${FONT_FAMILY}`);
-            }
-        } catch (_) { /* fall back to system font */ }
+    async function createBrickStrip(imageDataArray, customFooterSrc) {
+        const photosPromise = Promise.all(imageDataArray.slice(0, 4).map(loadImage));
+        const footerPromise = loadImage(customFooterSrc || FOOTER_IMAGE_SRC);
 
-        const images = await Promise.all(imageDataArray.slice(0, 4).map(loadImage));
+        const [images, footerImg] = await Promise.all([photosPromise, footerPromise]);
 
         const canvas = document.createElement("canvas");
         canvas.width = BASE_W * SCALE;
@@ -246,12 +156,12 @@
 
         drawBrickRow(ctx, 0, TOP_BAND, 32);
         drawWindows(ctx, images);
-        drawLabel(ctx);
+        drawFooterImage(ctx, footerImg);
 
         return canvas.toDataURL("image/png");
     }
 
-    // Aspect (width / height) of one photo inside a window, so captures fit exactly.
+    // Aspect ratio (width / height) of one photo inside a window
     createBrickStrip.photoAspect = (WINDOW.w - WINDOW.border * 2) / (WINDOW.h - WINDOW.border * 2);
 
     window.createBrickStrip = createBrickStrip;
