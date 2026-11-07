@@ -1229,7 +1229,7 @@ function updateFullscreenButton() {
 async function enterAppFullscreen() {
     try {
         if (appContainer.requestFullscreen) {
-            await document.documentElement.requestFullscreen();
+            document.documentElement.requestFullscreen();
 
         } else if (appContainer.webkitRequestFullscreen) {
             appContainer.webkitRequestFullscreen();
