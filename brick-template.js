@@ -138,16 +138,53 @@
         ctx.textAlign = "center";
         ctx.textBaseline = "middle";
 
-        // small "KID'S"
+        // small "KID'S" title
         ctx.save();
-        ctx.font = `700 26px ${FONT_FAMILY}`;
-        if ("letterSpacing" in ctx) ctx.letterSpacing = "4px";
+
+        const kidsFont = `700 26px ${FONT_FAMILY}`;
+        const apostropheFont = 'bold 20px Arial, sans-serif';
+
+        ctx.textAlign = "left";
+        ctx.textBaseline = "middle";
+
+        // Measure each part to center the complete word
+        ctx.font = kidsFont;
+        const kidWidth = ctx.measureText("KID").width;
+        const sWidth = ctx.measureText("S").width;
+
+        ctx.font = apostropheFont;
+        const apostropheWidth = ctx.measureText("'").width;
+
+        const gap = 2;
+        const totalWidth = kidWidth + apostropheWidth + sWidth + gap * 2;
+
+        let startX = (BASE_W - totalWidth) / 2;
+        const titleY = LABEL_TOP + 34;
+
+        // Draw KID
+        ctx.font = kidsFont;
         ctx.lineJoin = "round";
         ctx.lineWidth = 5;
         ctx.strokeStyle = CREAM;
-        ctx.strokeText("KID'S", BASE_W / 2 + 2, LABEL_TOP + 34);
         ctx.fillStyle = KIDS_COLOR;
-        ctx.fillText("KID'S", BASE_W / 2 + 2, LABEL_TOP + 34);
+
+        ctx.strokeText("KID", startX, titleY);
+        ctx.fillText("KID", startX, titleY);
+
+        startX += kidWidth + gap;
+
+        // Draw a normal apostrophe
+        ctx.font = apostropheFont;
+        ctx.strokeText("'", startX, titleY - 7);
+        ctx.fillText("'", startX, titleY - 7);
+
+        startX += apostropheWidth + gap;
+
+        // Draw S
+        ctx.font = kidsFont;
+        ctx.strokeText("S", startX, titleY);
+        ctx.fillText("S", startX, titleY);
+
         ctx.restore();
 
         // big multicolor "AWKND"

@@ -1,3 +1,4 @@
+
 // DOM Elements
 const video = document.getElementById("video");
 const stripBtn = document.getElementById("strip-btn");
@@ -20,36 +21,19 @@ const zoomInBtn = document.getElementById("zoom-in-btn");
 const zoomOutBtn = document.getElementById("zoom-out-btn");
 const zoomResetBtn = document.getElementById("zoom-reset-btn");
 
-// Sticker & Editor DOM Elements
-const stickerEditorModal = document.getElementById("sticker-editor-modal");
-const editorPreviewArea = document.getElementById("editor-preview-area");
-const editingImage = document.getElementById("editing-image");
-const closeEditorBtn = document.getElementById("close-editor-btn");
-const stickerPalette = document.getElementById("sticker-palette");
-const clearStickersBtn = document.getElementById("clear-stickers-btn");
-const stickerLayer = document.getElementById("sticker-layer");
-
 let currentStream = null;
 let isCapturing = false;
 let selectedStripLayout = "vertical-4";
-let activeRawStripData = null;
-let pendingPreviewContainer = null;
 let previewZoom = 1;
 let previewSource = null;
 
-// Sticker State Arrays & Counters
-let stickers = [];
-let stickerIdCounter = 0;
-
-
-// ── Persistence (localStorage) ──────────────────────────────────────────────
-// Settings and captured strips survive an accidental refresh. Strips are saved as
-// reduced-size JPEGs so several of them fit inside the browser's ~5 MB limit.
+// ── Persistence ─────────────────────────────────────────────────────────────
 
 const STORAGE_KEYS = {
     settings: "photobooth:settings:v1",
     gallery: "photobooth:gallery:v1"
 };
+
 const MAX_STORED_STRIPS = 8;
 const STORED_MAX_WIDTH = 720;
 const STORED_JPEG_QUALITY = 0.85;
@@ -93,19 +77,28 @@ function loadSettings() {
 function restoreSettings() {
     const saved = loadSettings();
 
-    if (saved.filter && filterSelect.querySelector(`option[value="${saved.filter}"]`)) {
+    if (
+        saved.filter &&
+        filterSelect.querySelector(`option[value="${saved.filter}"]`)
+    ) {
         filterSelect.value = saved.filter;
     }
 
     if (saved.timer !== undefined && saved.timer !== "") {
         const t = parseInt(saved.timer, 10);
-        if (!Number.isNaN(t)) timerInput.value = Math.min(60, Math.max(0, t));
+        if (!Number.isNaN(t)) {
+            timerInput.value = Math.min(60, Math.max(0, t));
+        }
     }
 
     if (saved.layout && STRIP_LAYOUTS[saved.layout]) {
         selectedStripLayout = saved.layout;
+
         stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
-            btn.classList.toggle("active", btn.dataset.layout === selectedStripLayout);
+            btn.classList.toggle(
+                "active",
+                btn.dataset.layout === selectedStripLayout
+            );
         });
     }
 }
@@ -113,17 +106,24 @@ function restoreSettings() {
 function compressForStorage(dataUrl) {
     return new Promise((resolve) => {
         const img = new Image();
+
         img.onload = () => {
             const scale = Math.min(1, STORED_MAX_WIDTH / img.width);
+
             const canvas = document.createElement("canvas");
             canvas.width = Math.round(img.width * scale);
             canvas.height = Math.round(img.height * scale);
+
             const ctx = canvas.getContext("2d");
+
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+
             resolve(canvas.toDataURL("image/jpeg", STORED_JPEG_QUALITY));
         };
+
         img.onerror = () => resolve(null);
         img.src = dataUrl;
     });
@@ -131,6 +131,7 @@ function compressForStorage(dataUrl) {
 
 function scheduleGalleryPersist() {
     if (isRestoringGallery) return;
+
     clearTimeout(persistTimer);
     persistTimer = setTimeout(persistGallery, 300);
 }
@@ -140,33 +141,47 @@ async function persistGallery() {
         persistAgain = true;
         return;
     }
+
     isPersisting = true;
 
     try {
-        // gallery lists newest first
-        const items = Array.from(gallery.querySelectorAll(".photo-item")).slice(0, MAX_STORED_STRIPS);
+        const items = Array.from(
+            gallery.querySelectorAll(".photo-item")
+        ).slice(0, MAX_STORED_STRIPS);
+
         const entries = [];
 
         for (const el of items) {
             if (!el.imageData) continue;
+
             if (!el.storedData || el.storedSource !== el.imageData) {
                 el.storedData = await compressForStorage(el.imageData);
                 el.storedSource = el.imageData;
             }
+
             if (el.storedData) {
-                entries.push({ data: el.storedData, label: el.querySelector("img")?.alt || "" });
+                entries.push({
+                    data: el.storedData,
+                    label: el.querySelector("img")?.alt || ""
+                });
             }
         }
 
-        // If the browser's storage is full, drop the oldest strips until it fits.
-        while (entries.length && !storageSet(STORAGE_KEYS.gallery, entries)) {
+        while (
+            entries.length &&
+            !storageSet(STORAGE_KEYS.gallery, entries)
+        ) {
             entries.pop();
         }
+
         if (!entries.length) {
-            try { localStorage.removeItem(STORAGE_KEYS.gallery); } catch (_) {}
+            try {
+                localStorage.removeItem(STORAGE_KEYS.gallery);
+            } catch (_) {}
         }
     } finally {
         isPersisting = false;
+
         if (persistAgain) {
             persistAgain = false;
             scheduleGalleryPersist();
@@ -176,15 +191,28 @@ async function persistGallery() {
 
 function restoreGallery() {
     const saved = storageGet(STORAGE_KEYS.gallery);
+
     if (!Array.isArray(saved) || !saved.length) return;
 
     isRestoringGallery = true;
+
     try {
-        // saved newest-first; addPhotoToGallery prepends, so add oldest first
         for (let i = saved.length - 1; i >= 0; i--) {
             const entry = saved[i];
-            if (!entry || typeof entry.data !== "string" || !entry.data.startsWith("data:image/")) continue;
-            const container = addPhotoToGallery(entry.data, entry.label || "Saved strip");
+
+            if (
+                !entry ||
+                typeof entry.data !== "string" ||
+                !entry.data.startsWith("data:image/")
+            ) {
+                continue;
+            }
+
+            const container = addPhotoToGallery(
+                entry.data,
+                entry.label || "Saved strip"
+            );
+
             container.storedData = entry.data;
             container.storedSource = entry.data;
         }
@@ -194,32 +222,75 @@ function restoreGallery() {
 }
 
 function imageExtension(dataUrl) {
-    return typeof dataUrl === "string" && dataUrl.startsWith("data:image/jpeg") ? "jpg" : "png";
+    return typeof dataUrl === "string" &&
+        dataUrl.startsWith("data:image/jpeg")
+        ? "jpg"
+        : "png";
 }
 
+// ── Strip Layouts ───────────────────────────────────────────────────────────
+
 const STRIP_LAYOUTS = {
-    "vertical-4": { shots: 4, cols: 1, rows: 4, label: "Classic 4" },
-    "polaroid-1": { shots: 1, cols: 1, rows: 1, label: "Polaroid" },
-    "brick-4": { shots: 4, cols: 1, rows: 4, label: "Brick 4" }
+    "vertical-4": {
+        shots: 4,
+        cols: 1,
+        rows: 4,
+        label: "Classic 4"
+    },
+    "polaroid-1": {
+        shots: 1,
+        cols: 1,
+        rows: 1,
+        label: "Polaroid"
+    },
+    "brick-4": {
+        shots: 4,
+        cols: 1,
+        rows: 4,
+        label: "Brick 4"
+    }
 };
 
 const LAYOUT_ASPECT = {
     "vertical-4": 3 / 4,
     "polaroid-1": 1,
-    // matches the photo windows of the brick template (see brick-template.js)
-    "brick-4": window.createBrickStrip ? window.createBrickStrip.photoAspect : 300 / 204
+    "brick-4": window.createBrickStrip
+        ? window.createBrickStrip.photoAspect
+        : 300 / 204
 };
 
+// ── Filters ─────────────────────────────────────────────────────────────────
+
 const FILTERS = {
-    none:       { css: "" },
-    grayscale:{ css: "grayscale(100%)" },
-    sepia:    { css: "sepia(100%)" },
-    noir:     { css: "grayscale(100%) contrast(140%) brightness(85%)", vignette: 0.45 },
-    vintage:  { css: "sepia(55%) saturate(75%) contrast(90%) brightness(105%)", vignette: 0.3 },
-    vivid:    { css: "saturate(165%) contrast(115%) brightness(105%)" },
-    cool:     { css: "saturate(115%) hue-rotate(15deg) brightness(105%)" },
-    warm:     { css: "saturate(120%) sepia(18%) brightness(108%)" },
-    dreamy:   { css: "contrast(85%) brightness(112%) saturate(80%) blur(0.5px)" }
+    none: {
+        css: ""
+    },
+    grayscale: {
+        css: "grayscale(100%)"
+    },
+    sepia: {
+        css: "sepia(100%)"
+    },
+    noir: {
+        css: "grayscale(100%) contrast(140%) brightness(85%)",
+        vignette: 0.45
+    },
+    vintage: {
+        css: "sepia(55%) saturate(75%) contrast(90%) brightness(105%)",
+        vignette: 0.3
+    },
+    vivid: {
+        css: "saturate(165%) contrast(115%) brightness(105%)"
+    },
+    cool: {
+        css: "saturate(115%) hue-rotate(15deg) brightness(105%)"
+    },
+    warm: {
+        css: "saturate(120%) sepia(18%) brightness(108%)"
+    },
+    dreamy: {
+        css: "contrast(85%) brightness(112%) saturate(80%) blur(0.5px)"
+    }
 };
 
 // ── Camera ──────────────────────────────────────────────────────────────────
@@ -227,36 +298,53 @@ const FILTERS = {
 async function initCameras() {
     if (!navigator.mediaDevices?.getUserMedia) {
         console.error("Camera API not supported in this browser.");
-        cameraSelect.innerHTML = `<option value="">Camera unsupported</option>`;
+
+        cameraSelect.innerHTML =
+            `<option value="">Camera unsupported</option>`;
+
         alert("This browser does not support camera access.");
         return;
     }
 
     try {
-        const tempStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        const tempStream = await navigator.mediaDevices.getUserMedia({
+            video: true
+        });
+
         tempStream.getTracks().forEach((t) => t.stop());
 
         const devices = await navigator.mediaDevices.enumerateDevices();
-        const cameras = devices.filter((d) => d.kind === "videoinput");
+
+        const cameras = devices.filter(
+            (d) => d.kind === "videoinput"
+        );
 
         cameraSelect.innerHTML = cameras.length
             ? cameras.map((cam, i) =>
                 `<option value="${cam.deviceId}">${cam.label || `Camera ${i + 1}`}</option>`
-              ).join("")
+            ).join("")
             : `<option value="">No camera found</option>`;
 
         if (cameras.length) {
             const savedCamera = loadSettings().camera;
-            const startId = cameras.some((c) => c.deviceId === savedCamera)
+
+            const startId = cameras.some(
+                (c) => c.deviceId === savedCamera
+            )
                 ? savedCamera
                 : cameras[0].deviceId;
+
             cameraSelect.value = startId;
+
             await startCamera(startId);
             saveSettings();
         }
     } catch (err) {
         console.error("Camera init error:", err);
-        cameraSelect.innerHTML = `<option value="">Camera unavailable</option>`;
+
+        cameraSelect.innerHTML =
+            `<option value="">Camera unavailable</option>`;
+
         alert("Camera access denied or not available.");
     }
 }
@@ -268,12 +356,22 @@ async function startCamera(deviceId) {
 
     const constraints = {
         video: deviceId
-            ? { deviceId: { exact: deviceId }, width: { ideal: 1280 }, height: { ideal: 720 } }
-            : { width: { ideal: 1280 }, height: { ideal: 720 } }
+            ? {
+                deviceId: { exact: deviceId },
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
+            : {
+                width: { ideal: 1280 },
+                height: { ideal: 720 }
+            }
     };
 
     try {
-        currentStream = await navigator.mediaDevices.getUserMedia(constraints);
+        currentStream = await navigator.mediaDevices.getUserMedia(
+            constraints
+        );
+
         video.srcObject = currentStream;
         await video.play();
     } catch (err) {
@@ -283,14 +381,18 @@ async function startCamera(deviceId) {
 }
 
 cameraSelect.addEventListener("change", () => {
-    if (cameraSelect.value) startCamera(cameraSelect.value);
+    if (cameraSelect.value) {
+        startCamera(cameraSelect.value);
+    }
+
     saveSettings();
 });
 
-// ── Filters ─────────────────────────────────────────────────────────────────
+// ── Video Filters ───────────────────────────────────────────────────────────
 
 function updateVideoFilter() {
     const filter = FILTERS[filterSelect.value] || FILTERS.none;
+
     video.style.filter = filter.css || "none";
 }
 
@@ -301,13 +403,14 @@ filterSelect.addEventListener("change", () => {
 
 timerInput.addEventListener("change", saveSettings);
 
-// ── Strip layout picker ─────────────────────────────────────────────────────
+// ── Strip Layout Picker ─────────────────────────────────────────────────────
 
 function applyLayoutAspect(layoutId) {
     const aspect = LAYOUT_ASPECT[layoutId] || 0.75;
+
     const videoWrapper = document.querySelector(".video-wrapper");
+
     if (videoWrapper) {
-        // The CSS sizes the box from --aspect so its shape always matches the captured photo.
         videoWrapper.style.setProperty("--aspect", String(aspect));
         videoWrapper.style.aspectRatio = String(aspect);
     }
@@ -315,283 +418,59 @@ function applyLayoutAspect(layoutId) {
 
 stripLayoutPicker.addEventListener("click", (e) => {
     const option = e.target.closest(".strip-option");
+
     if (!option) return;
 
     selectedStripLayout = option.dataset.layout;
+
     stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
         btn.classList.toggle("active", btn === option);
     });
+
     applyLayoutAspect(selectedStripLayout);
     saveSettings();
 });
 
-// ── Post-Capture Stickers & Editor ──────────────────────────────────────────
+// ── Save Captured Photo Strip ───────────────────────────────────────────────
 
-function openStickerEditor(stripDataUrl) {
-    activeRawStripData = stripDataUrl;
+function saveCapturedStrip(stripDataUrl) {
+    const layout = STRIP_LAYOUTS[selectedStripLayout];
 
-    if (editingImage) {
-        editingImage.src = stripDataUrl;
-    }
-
-    clearStickers();
-
-    if (stickerEditorModal) {
-        pendingPreviewContainer = addOrUpdatePreview(stripDataUrl, "Captured strip");
-        stickerEditorModal.classList.remove("hidden");
-        return;
-    }
-
-    addPhotoToGallery(stripDataUrl, "Captured strip");
+    // Save directly to the gallery. No sticker editor.
+    addPhotoToGallery(
+        stripDataUrl,
+        `${layout.label} strip`
+    );
 }
 
-if (closeEditorBtn) {
-    closeEditorBtn.addEventListener("click", () => {
-        burnStickersAndSave();
-    });
-}
-
-function addSticker(emoji) {
-    const id = `sticker-${stickerIdCounter++}`;
-    const previewRect = editorPreviewArea.getBoundingClientRect();
-    const sizePx = Math.max(48, previewRect.width * 0.16);
-    const sizePercent = (sizePx / previewRect.width) * 100;
-
-    const el = document.createElement("div");
-    el.className = "sticker";
-    el.style.left = "50%";
-    el.style.top = "50%";
-
-    const content = document.createElement("span");
-    content.className = "sticker-content";
-    content.style.fontSize = `${sizePx}px`;
-    content.textContent = emoji;
-    el.appendChild(content);
-
-    const controls = document.createElement("div");
-    controls.className = "sticker-controls";
-
-    const removeBtn = document.createElement("div");
-    removeBtn.className = "sticker-handle remove-handle";
-    removeBtn.textContent = "✕";
-    removeBtn.addEventListener("pointerdown", (e) => e.stopPropagation());
-    removeBtn.addEventListener("click", (e) => {
-        e.stopPropagation();
-        removeSticker(id);
-    });
-    controls.appendChild(removeBtn);
-
-    const resizeBtn = document.createElement("div");
-    resizeBtn.className = "sticker-handle resize-handle";
-    resizeBtn.textContent = "⤢";
-    controls.appendChild(resizeBtn);
-
-    const rotateBtn = document.createElement("div");
-    rotateBtn.className = "sticker-handle rotate-handle";
-    rotateBtn.textContent = "↻";
-    controls.appendChild(rotateBtn);
-
-    el.appendChild(controls);
-
-    const stickerData = { id, emoji, xPercent: 50, yPercent: 50, sizePercent, rotation: 0, el, content };
-    stickers.push(stickerData);
-    setupStickerInteractions(el, stickerData, resizeBtn, rotateBtn);
-    setActiveSticker(stickerData);
-    stickerLayer.appendChild(el);
-}
-
-// Tap/click an empty part of the strip to move the selected icon there.
-if (editorPreviewArea) {
-    editorPreviewArea.addEventListener("pointerdown", (event) => {
-        if (event.target.closest(".sticker")) return;
-        const active = stickers.find((sticker) => sticker.el.classList.contains("active"));
-        if (!active) return;
-
-        const rect = editorPreviewArea.getBoundingClientRect();
-        active.xPercent = Math.min(100, Math.max(0, ((event.clientX - rect.left) / rect.width) * 100));
-        active.yPercent = Math.min(100, Math.max(0, ((event.clientY - rect.top) / rect.height) * 100));
-        active.el.style.left = `${active.xPercent}%`;
-        active.el.style.top = `${active.yPercent}%`;
-    });
-}
-
-function setActiveSticker(targetSticker) {
-    stickers.forEach((s) => s.el.classList.toggle("active", s === targetSticker));
-}
-
-function removeSticker(id) {
-    const idx = stickers.findIndex((s) => s.id === id);
-    if (idx === -1) return;
-    stickers[idx].el.remove();
-    stickers.splice(idx, 1);
-}
-
-function clearStickers() {
-    stickers.forEach((s) => s.el.remove());
-    stickers.length = 0;
-}
-
-document.addEventListener("pointerdown", (e) => {
-    if (!e.target.closest(".sticker") && !e.target.closest(".sticker-palette")) {
-        stickers.forEach((s) => s.el.classList.remove("active"));
-    }
-});
-
-if (stickerPalette) {
-    stickerPalette.addEventListener("click", (e) => {
-        const option = e.target.closest(".sticker-option");
-        if (!option) return;
-        const emoji = option.dataset.emoji || option.textContent.trim();
-        if (emoji) addSticker(emoji);
-    });
-}
-
-if (clearStickersBtn) {
-    clearStickersBtn.addEventListener("click", clearStickers);
-}
-
-function setupStickerInteractions(el, sticker, resizeBtn, rotateBtn) {
-    el.addEventListener("pointerdown", (e) => {
-        if (e.target.classList.contains("sticker-handle")) return;
-        e.preventDefault();
-        setActiveSticker(sticker);
-        el.setPointerCapture(e.pointerId);
-        el.classList.add("dragging");
-
-        const onMove = (ev) => {
-            const rect = editorPreviewArea.getBoundingClientRect();
-            let xPercent = ((ev.clientX - rect.left) / rect.width) * 100;
-            let yPercent = ((ev.clientY - rect.top) / rect.height) * 100;
-            sticker.xPercent = Math.min(100, Math.max(0, xPercent));
-            sticker.yPercent = Math.min(100, Math.max(0, yPercent));
-            el.style.left = `${sticker.xPercent}%`;
-            el.style.top = `${sticker.yPercent}%`;
-        };
-
-        const onUp = () => {
-            el.classList.remove("dragging");
-            document.removeEventListener("pointermove", onMove);
-            document.removeEventListener("pointerup", onUp);
-        };
-
-        document.addEventListener("pointermove", onMove);
-        document.addEventListener("pointerup", onUp);
-    });
-
-    resizeBtn.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        resizeBtn.setPointerCapture(e.pointerId);
-
-        const startX = e.clientX;
-        const startSize = sticker.sizePercent;
-        const wrapperRect = editorPreviewArea.getBoundingClientRect();
-
-        const onMove = (ev) => {
-            const deltaX = ev.clientX - startX;
-            const deltaPercent = (deltaX / wrapperRect.width) * 100;
-            let newSize = Math.max(5, Math.min(70, startSize + deltaPercent * 1.5));
-            sticker.sizePercent = newSize;
-            const sizePx = (newSize / 100) * wrapperRect.width;
-            sticker.content.style.fontSize = `${sizePx}px`;
-        };
-
-        const onUp = () => {
-            document.removeEventListener("pointermove", onMove);
-            document.removeEventListener("pointerup", onUp);
-        };
-
-        document.addEventListener("pointermove", onMove);
-        document.addEventListener("pointerup", onUp);
-    });
-
-    rotateBtn.addEventListener("pointerdown", (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        rotateBtn.setPointerCapture(e.pointerId);
-
-        const rect = el.getBoundingClientRect();
-        const centerX = rect.left + rect.width / 2;
-        const centerY = rect.top + rect.height / 2;
-        const startRotation = sticker.rotation;
-        const startAngle = Math.atan2(e.clientY - centerY, e.clientX - centerX) * (180 / Math.PI);
-
-        const onMove = (ev) => {
-            const currentAngle = Math.atan2(ev.clientY - centerY, ev.clientX - centerX) * (180 / Math.PI);
-            const deltaAngle = currentAngle - startAngle;
-            sticker.rotation = Math.round((startRotation + deltaAngle) % 360);
-            sticker.content.style.transform = `rotate(${sticker.rotation}deg)`;
-        };
-
-        const onUp = () => {
-            document.removeEventListener("pointermove", onMove);
-            document.removeEventListener("pointerup", onUp);
-        };
-
-        document.addEventListener("pointermove", onMove);
-        document.addEventListener("pointerup", onUp);
-    });
-}
-
-function burnStickersAndSave() {
-    const img = new Image();
-    img.onload = () => {
-        const canvas = document.createElement("canvas");
-        canvas.width = img.width;
-        canvas.height = img.height;
-        const ctx = canvas.getContext("2d");
-
-        ctx.drawImage(img, 0, 0);
-
-        stickers.forEach((s) => {
-            ctx.save();
-            const x = (s.xPercent / 100) * canvas.width;
-            const y = (s.yPercent / 100) * canvas.height;
-            ctx.translate(x, y);
-            ctx.rotate((s.rotation * Math.PI) / 180);
-
-            const fontSize = (s.sizePercent / 100) * canvas.width;
-            ctx.font = `${fontSize}px "Segoe UI Emoji", "Apple Color Emoji", sans-serif`;
-            ctx.textAlign = "center";
-            ctx.textBaseline = "middle";
-            ctx.fillText(s.emoji, 0, 0);
-            ctx.restore();
-        });
-
-        const finalDataUrl = canvas.toDataURL("image/png");
-        if (stickerEditorModal) {
-            stickerEditorModal.classList.add("hidden");
-        }
-        const layout = STRIP_LAYOUTS[selectedStripLayout];
-
-        if (pendingPreviewContainer) {
-            const imgElement = pendingPreviewContainer.querySelector("img");
-            const label = `${layout.label} strip`;
-            imgElement.src = finalDataUrl;
-            imgElement.alt = label;
-            pendingPreviewContainer.imageData = finalDataUrl;
-            pendingPreviewContainer = null;
-            scheduleGalleryPersist();
-        } else {
-            addPhotoToGallery(finalDataUrl, `${layout.label} strip`);
-        }
-    };
-    img.src = activeRawStripData;
-}
-
-// ── Audio & Visual ──────────────────────────────────────────────────────────
+// ── Audio and Visual Effects ────────────────────────────────────────────────
 
 function playShutterSound() {
     try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const ctx = new (
+            window.AudioContext || window.webkitAudioContext
+        )();
+
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
+
         osc.connect(gain);
         gain.connect(ctx.destination);
+
         osc.frequency.setValueAtTime(800, ctx.currentTime);
-        osc.frequency.exponentialRampToValueAtTime(100, ctx.currentTime + 0.08);
+
+        osc.frequency.exponentialRampToValueAtTime(
+            100,
+            ctx.currentTime + 0.08
+        );
+
         gain.gain.setValueAtTime(0.3, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+
+        gain.gain.exponentialRampToValueAtTime(
+            0.01,
+            ctx.currentTime + 0.08
+        );
+
         osc.start(ctx.currentTime);
         osc.stop(ctx.currentTime + 0.08);
     } catch (_) {}
@@ -599,7 +478,10 @@ function playShutterSound() {
 
 function triggerFlash() {
     flashOverlay.classList.add("flash-active");
-    setTimeout(() => flashOverlay.classList.remove("flash-active"), 150);
+
+    setTimeout(() => {
+        flashOverlay.classList.remove("flash-active");
+    }, 150);
 }
 
 function showCountdown(seconds) {
@@ -610,20 +492,24 @@ function showCountdown(seconds) {
         }
 
         countdownOverlay.classList.remove("hidden");
+
         let remaining = seconds;
 
         const tick = () => {
             countdownNumber.textContent = remaining;
+
             if (remaining <= 0) {
                 countdownOverlay.classList.add("hidden");
                 resolve();
                 return;
             }
+
             remaining--;
             setTimeout(tick, 1000);
         };
 
         countdownNumber.textContent = remaining;
+
         setTimeout(tick, 1000);
     });
 }
@@ -633,7 +519,11 @@ function setControlsDisabled(disabled) {
     timerInput.disabled = disabled;
     cameraSelect.disabled = disabled;
     filterSelect.disabled = disabled;
-    stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => { btn.disabled = disabled; });
+
+    stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
+        btn.disabled = disabled;
+    });
+
     isCapturing = disabled;
 }
 
@@ -641,7 +531,11 @@ function setControlsDisabled(disabled) {
 
 function getCoverCropRect(srcWidth, srcHeight, targetAspect) {
     const srcAspect = srcWidth / srcHeight;
-    let sx = 0, sy = 0, sw = srcWidth, sh = srcHeight;
+
+    let sx = 0;
+    let sy = 0;
+    let sw = srcWidth;
+    let sh = srcHeight;
 
     if (srcAspect > targetAspect) {
         sw = srcHeight * targetAspect;
@@ -656,31 +550,50 @@ function getCoverCropRect(srcWidth, srcHeight, targetAspect) {
 
 function applyVignette(ctx, width, height, strength) {
     const gradient = ctx.createRadialGradient(
-        width / 2, height / 2, Math.min(width, height) * 0.25,
-        width / 2, height / 2, Math.min(width, height) * 0.7
+        width / 2,
+        height / 2,
+        Math.min(width, height) * 0.25,
+        width / 2,
+        height / 2,
+        Math.min(width, height) * 0.7
     );
+
     gradient.addColorStop(0, "rgba(0,0,0,0)");
     gradient.addColorStop(1, `rgba(0,0,0,${strength})`);
+
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, width, height);
 }
 
 function drawDateStamp(ctx, canvasWidth, canvasHeight) {
     const now = new Date();
+
     const yy = String(now.getFullYear()).slice(-2);
     const mm = String(now.getMonth() + 1).padStart(2, "0");
     const dd = String(now.getDate()).padStart(2, "0");
+
     const text = `'${yy} ${mm} ${dd}`;
 
-    const fontSize = Math.max(12, Math.round(canvasWidth * 0.032));
+    const fontSize = Math.max(
+        12,
+        Math.round(canvasWidth * 0.032)
+    );
+
     ctx.save();
+
     ctx.font = `italic bold ${fontSize}px "Courier New", monospace`;
     ctx.fillStyle = "rgba(255, 140, 40, 0.85)";
     ctx.textAlign = "right";
     ctx.textBaseline = "bottom";
     ctx.shadowColor = "rgba(0,0,0,0.5)";
     ctx.shadowBlur = 2;
-    ctx.fillText(text, canvasWidth - fontSize * 0.6, canvasHeight - fontSize * 0.6);
+
+    ctx.fillText(
+        text,
+        canvasWidth - fontSize * 0.6,
+        canvasHeight - fontSize * 0.6
+    );
+
     ctx.restore();
 }
 
@@ -689,26 +602,57 @@ function captureFrame() {
         throw new Error("Camera not ready");
     }
 
-    const targetAspect = LAYOUT_ASPECT[selectedStripLayout] || (video.videoWidth / video.videoHeight);
-    const { sx, sy, sw, sh } = getCoverCropRect(video.videoWidth, video.videoHeight, targetAspect);
+    const targetAspect =
+        LAYOUT_ASPECT[selectedStripLayout] ||
+        (video.videoWidth / video.videoHeight);
+
+    const { sx, sy, sw, sh } = getCoverCropRect(
+        video.videoWidth,
+        video.videoHeight,
+        targetAspect
+    );
 
     const canvas = document.createElement("canvas");
+
     canvas.width = Math.round(sw * 1.5);
     canvas.height = Math.round(sh * 1.5);
-    const ctx = canvas.getContext("2d", { willReadFrequently: true });
+
+    const ctx = canvas.getContext("2d", {
+        willReadFrequently: true
+    });
 
     const filterInfo = FILTERS[filterSelect.value] || FILTERS.none;
 
     ctx.save();
+
     ctx.translate(canvas.width, 0);
     ctx.scale(-1, 1);
+
     ctx.filter = filterInfo.css || "none";
-    ctx.drawImage(video, sx, sy, sw, sh, 0, 0, canvas.width, canvas.height);
+
+    ctx.drawImage(
+        video,
+        sx,
+        sy,
+        sw,
+        sh,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+    );
+
     ctx.restore();
 
     ctx.filter = "none";
+
     if (filterInfo.vignette) {
-        applyVignette(ctx, canvas.width, canvas.height, filterInfo.vignette);
+        applyVignette(
+            ctx,
+            canvas.width,
+            canvas.height,
+            filterInfo.vignette
+        );
     }
 
     drawDateStamp(ctx, canvas.width, canvas.height);
@@ -721,6 +665,7 @@ function loadImages(imageDataArray) {
         imageDataArray.map(
             (src) => new Promise((resolve, reject) => {
                 const img = new Image();
+
                 img.onload = () => resolve(img);
                 img.onerror = reject;
                 img.src = src;
@@ -735,10 +680,15 @@ function createPhotoStrip(layoutId, imageDataArray) {
     }
 
     if (layoutId === "brick-4") {
+        if (typeof window.createBrickStrip !== "function") {
+            throw new Error("Brick 4 template is unavailable.");
+        }
+
         return window.createBrickStrip(imageDataArray);
     }
 
     const layout = STRIP_LAYOUTS[layoutId];
+
     const gap = 12;
     const padding = 24;
 
@@ -747,16 +697,33 @@ function createPhotoStrip(layoutId, imageDataArray) {
         let cellH = loaded[0].height;
 
         const maxWidth = 1800;
-        const naturalWidth = layout.cols * cellW + (layout.cols - 1) * gap + padding * 2;
+
+        const naturalWidth =
+            layout.cols * cellW +
+            (layout.cols - 1) * gap +
+            padding * 2;
+
         if (naturalWidth > maxWidth) {
-            const scale = (maxWidth - (layout.cols - 1) * gap - padding * 2) / (layout.cols * cellW);
+            const scale =
+                (maxWidth - (layout.cols - 1) * gap - padding * 2) /
+                (layout.cols * cellW);
+
             cellW = Math.round(cellW * scale);
             cellH = Math.round(cellH * scale);
         }
 
         const canvas = document.createElement("canvas");
-        canvas.width = layout.cols * cellW + (layout.cols - 1) * gap + padding * 2;
-        canvas.height = layout.rows * cellH + (layout.rows - 1) * gap + padding * 2;
+
+        canvas.width =
+            layout.cols * cellW +
+            (layout.cols - 1) * gap +
+            padding * 2;
+
+        canvas.height =
+            layout.rows * cellH +
+            (layout.rows - 1) * gap +
+            padding * 2;
+
         const ctx = canvas.getContext("2d");
 
         ctx.fillStyle = "#f6f0e3";
@@ -765,8 +732,10 @@ function createPhotoStrip(layoutId, imageDataArray) {
         loaded.forEach((img, i) => {
             const col = i % layout.cols;
             const row = Math.floor(i / layout.cols);
+
             const x = padding + col * (cellW + gap);
             const y = padding + row * (cellH + gap);
+
             ctx.drawImage(img, x, y, cellW, cellH);
         });
 
@@ -780,12 +749,15 @@ function createPolaroidFrame(imageData) {
         const bottom = Math.round(img.width * 0.2);
 
         const canvas = document.createElement("canvas");
+
         canvas.width = img.width + side * 2;
         canvas.height = img.height + side + bottom;
+
         const ctx = canvas.getContext("2d");
 
         ctx.fillStyle = "#f8f2e4";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
         ctx.drawImage(img, side, side, img.width, img.height);
 
         return canvas.toDataURL("image/png");
@@ -794,23 +766,11 @@ function createPolaroidFrame(imageData) {
 
 // ── Gallery ─────────────────────────────────────────────────────────────────
 
-function addOrUpdatePreview(imageData, label) {
-    if (pendingPreviewContainer) {
-        const imgElement = pendingPreviewContainer.querySelector("img");
-        imgElement.src = imageData;
-        imgElement.alt = label || "Captured photo";
-        pendingPreviewContainer.imageData = imageData;
-        return pendingPreviewContainer;
-    }
-
-    const container = addPhotoToGallery(imageData, label);
-    pendingPreviewContainer = container;
-    return container;
-}
-
 function updateEmptyState() {
     const hasPhotos = gallery.querySelector(".photo-item") !== null;
+
     sessionEmpty.classList.toggle("hidden", hasPhotos);
+
     sessionEmpty.textContent = hasPhotos
         ? "Select photos to download or remove them."
         : "Your photos will appear here.";
@@ -818,9 +778,12 @@ function updateEmptyState() {
 
 function setPreviewZoom(level) {
     previewZoom = Math.max(0.8, Math.min(3, level));
+
     if (previewImage) {
         previewImage.style.transform = `scale(${previewZoom})`;
-        previewImage.style.cursor = previewZoom > 1 ? "grab" : "zoom-in";
+
+        previewImage.style.cursor =
+            previewZoom > 1 ? "grab" : "zoom-in";
     }
 }
 
@@ -830,16 +793,20 @@ function resetPreviewZoom() {
 
 function openPreview(imageData) {
     if (!previewModal || !previewImage) return;
+
     previewSource = imageData;
     previewZoom = 1;
+
     previewImage.src = imageData;
     previewImage.alt = "Photo strip preview";
     previewImage.style.transform = "scale(1)";
 
     const img = new Image();
+
     img.onload = () => {
         const maxWidth = Math.min(window.innerWidth * 0.9, 900);
         const maxHeight = Math.min(window.innerHeight * 0.82, 900);
+
         const ratio = img.width / img.height;
 
         let width = img.width;
@@ -858,6 +825,7 @@ function openPreview(imageData) {
         previewImage.style.width = `${Math.round(width)}px`;
         previewImage.style.height = `${Math.round(height)}px`;
     };
+
     img.src = imageData;
 
     previewModal.classList.remove("hidden");
@@ -866,17 +834,24 @@ function openPreview(imageData) {
 
 function closePreview() {
     if (!previewModal || !previewImage) return;
+
     previewModal.classList.add("hidden");
     previewModal.setAttribute("aria-hidden", "true");
+
     previewImage.removeAttribute("src");
+
     previewZoom = 1;
     previewSource = null;
+
     previewImage.style.transform = "scale(1)";
 }
 
 if (previewModal) {
     previewModal.addEventListener("click", (e) => {
-        if (e.target.classList.contains("modal-backdrop") || e.target === previewModal) {
+        if (
+            e.target.classList.contains("preview-backdrop") ||
+            e.target === previewModal
+        ) {
             closePreview();
         }
     });
@@ -887,11 +862,15 @@ if (closePreviewBtn) {
 }
 
 if (zoomInBtn) {
-    zoomInBtn.addEventListener("click", () => setPreviewZoom(previewZoom + 0.25));
+    zoomInBtn.addEventListener("click", () => {
+        setPreviewZoom(previewZoom + 0.25);
+    });
 }
 
 if (zoomOutBtn) {
-    zoomOutBtn.addEventListener("click", () => setPreviewZoom(previewZoom - 0.25));
+    zoomOutBtn.addEventListener("click", () => {
+        setPreviewZoom(previewZoom - 0.25);
+    });
 }
 
 if (zoomResetBtn) {
@@ -900,9 +879,17 @@ if (zoomResetBtn) {
 
 if (previewImage) {
     previewImage.addEventListener("wheel", (e) => {
-        if (!previewModal || previewModal.classList.contains("hidden")) return;
+        if (
+            !previewModal ||
+            previewModal.classList.contains("hidden")
+        ) {
+            return;
+        }
+
         e.preventDefault();
+
         const delta = e.deltaY < 0 ? 0.15 : -0.15;
+
         setPreviewZoom(previewZoom + delta);
     }, { passive: false });
 
@@ -916,11 +903,20 @@ if (previewImage) {
 }
 
 document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && previewModal && !previewModal.classList.contains("hidden")) {
+    if (
+        e.key === "Escape" &&
+        previewModal &&
+        !previewModal.classList.contains("hidden")
+    ) {
         closePreview();
     }
 
-    if (!previewModal || previewModal.classList.contains("hidden")) return;
+    if (
+        !previewModal ||
+        previewModal.classList.contains("hidden")
+    ) {
+        return;
+    }
 
     if (e.key === "+" || e.key === "=") {
         e.preventDefault();
@@ -935,57 +931,70 @@ document.addEventListener("keydown", (e) => {
 });
 
 function addPhotoToGallery(imageData, label) {
-    updateEmptyState();
-
     const photoContainer = document.createElement("div");
+
     photoContainer.className = "photo-item";
-    photoContainer.style.setProperty("--tilt", `${(Math.random() * 4 - 2).toFixed(2)}deg`);
+
+    photoContainer.style.setProperty(
+        "--tilt",
+        `${(Math.random() * 4 - 2).toFixed(2)}deg`
+    );
 
     const checkbox = document.createElement("input");
+
     checkbox.type = "checkbox";
     checkbox.className = "photo-checkbox";
+
     checkbox.addEventListener("change", updateBatchButton);
 
     const deleteBtn = document.createElement("button");
+
     deleteBtn.className = "delete-btn";
     deleteBtn.textContent = "✕";
     deleteBtn.title = "Remove from session";
+
     deleteBtn.addEventListener("click", () => {
-        if (pendingPreviewContainer === photoContainer) {
-            pendingPreviewContainer = null;
-        }
         photoContainer.remove();
+
         updateEmptyState();
         updateBatchButton();
         scheduleGalleryPersist();
     });
 
     const img = document.createElement("img");
+
     img.src = imageData;
     img.alt = label || "Captured photo";
-    img.addEventListener("click", () => openPreview(imageData));
+
+    img.addEventListener("click", () => {
+        openPreview(imageData);
+    });
 
     const downloadBtn = document.createElement("button");
+
     downloadBtn.textContent = "💾 Download";
     downloadBtn.className = "download-btn";
 
     photoContainer.imageData = imageData;
 
-    downloadBtn.addEventListener("click", () =>
+    downloadBtn.addEventListener("click", () => {
         saveAndDownloadImage(
             photoContainer.imageData,
             `photobooth_${Date.now()}.${imageExtension(photoContainer.imageData)}`,
             downloadBtn
-        )
-    );
+        );
+    });
 
     photoContainer.appendChild(checkbox);
     photoContainer.appendChild(deleteBtn);
     photoContainer.appendChild(img);
     photoContainer.appendChild(downloadBtn);
+
     gallery.prepend(photoContainer);
+
     updateEmptyState();
     scheduleGalleryPersist();
+
     return photoContainer;
 }
 
@@ -993,23 +1002,40 @@ function addPhotoToGallery(imageData, label) {
 
 async function capturePhotoStrip() {
     const layout = STRIP_LAYOUTS[selectedStripLayout];
-    const countdown = Math.min(60, Math.max(0, parseInt(timerInput.value, 10) || 3));
+
+    const countdown = Math.min(
+        60,
+        Math.max(0, parseInt(timerInput.value, 10) || 3)
+    );
+
     const shots = [];
+
     setControlsDisabled(true);
 
     try {
         for (let i = 0; i < layout.shots; i++) {
             await showCountdown(countdown);
+
             triggerFlash();
             playShutterSound();
+
             shots.push(captureFrame());
         }
 
-        const stripData = await createPhotoStrip(selectedStripLayout, shots);
-        openStickerEditor(stripData);
+        const stripData = await createPhotoStrip(
+            selectedStripLayout,
+            shots
+        );
+
+        // Directly save the finished strip. No icons or sticker editor.
+        saveCapturedStrip(stripData);
+
     } catch (err) {
         console.error(err);
-        alert("Could not create photo strip. Make sure the camera is ready.");
+
+        alert(
+            "Could not create photo strip. Make sure the camera is ready."
+        );
     } finally {
         setControlsDisabled(false);
     }
@@ -1017,16 +1043,20 @@ async function capturePhotoStrip() {
 
 stripBtn.addEventListener("click", () => {
     if (isCapturing) return;
+
     capturePhotoStrip();
 });
 
-// ── Downloads & Batch ───────────────────────────────────────────────────────
+// ── Downloads and Batch Selection ───────────────────────────────────────────
 
 function saveAndDownloadImage(imageData, filename, button) {
     button.disabled = true;
     button.textContent = "Downloading...";
+
     downloadBlob(imageData, filename);
+
     button.textContent = "✅ Downloaded";
+
     setTimeout(() => {
         button.textContent = "💾 Download";
         button.disabled = false;
@@ -1035,32 +1065,53 @@ function saveAndDownloadImage(imageData, filename, button) {
 
 function downloadBlob(dataUrl, filename) {
     const link = document.createElement("a");
+
     link.download = filename;
     link.href = dataUrl;
     link.style.display = "none";
+
     document.body.appendChild(link);
+
     link.click();
+
     document.body.removeChild(link);
 }
 
 selectAllBtn.addEventListener("click", () => {
     const checkboxes = document.querySelectorAll(".photo-checkbox");
-    const allChecked = checkboxes.length > 0 && Array.from(checkboxes).every((cb) => cb.checked);
-    checkboxes.forEach((cb) => { cb.checked = !allChecked; });
-    selectAllBtn.textContent = allChecked ? "Select All" : "Deselect All";
+
+    const allChecked =
+        checkboxes.length > 0 &&
+        Array.from(checkboxes).every((cb) => cb.checked);
+
+    checkboxes.forEach((cb) => {
+        cb.checked = !allChecked;
+    });
+
+    selectAllBtn.textContent = allChecked
+        ? "Select All"
+        : "Deselect All";
+
     updateBatchButton();
 });
 
 batchSaveBtn.addEventListener("click", saveSelectedImages);
 
 function updateBatchButton() {
-    const count = document.querySelectorAll(".photo-checkbox:checked").length;
+    const count = document.querySelectorAll(
+        ".photo-checkbox:checked"
+    ).length;
+
     batchSaveBtn.classList.toggle("hidden", count === 0);
-    batchSaveBtn.textContent = `💾 Download ${count} Selected Image${count !== 1 ? "s" : ""}`;
+
+    batchSaveBtn.textContent =
+        `💾 Download ${count} Selected Image${count !== 1 ? "s" : ""}`;
 }
 
 async function saveSelectedImages() {
-    const selected = Array.from(document.querySelectorAll(".photo-checkbox:checked"))
+    const selected = Array.from(
+        document.querySelectorAll(".photo-checkbox:checked")
+    )
         .map((cb) => cb.closest(".photo-item"))
         .filter((el) => el?.imageData);
 
@@ -1070,17 +1121,26 @@ async function saveSelectedImages() {
     }
 
     batchSaveBtn.disabled = true;
-    batchSaveBtn.textContent = `Downloading ${selected.length} images...`;
+
+    batchSaveBtn.textContent =
+        `Downloading ${selected.length} images...`;
 
     try {
         const timestamp = Date.now();
+
         selected.forEach((container, index) => {
-            const filename = `photobooth_batch_${timestamp}_${index + 1}.${imageExtension(container.imageData)}`;
+            const filename =
+                `photobooth_batch_${timestamp}_${index + 1}.${imageExtension(container.imageData)}`;
+
             downloadBlob(container.imageData, filename);
         });
 
-        selected.forEach((c) => { c.querySelector(".photo-checkbox").checked = false; });
+        selected.forEach((container) => {
+            container.querySelector(".photo-checkbox").checked = false;
+        });
+
         selectAllBtn.textContent = "Select All";
+
     } catch (err) {
         console.error(err);
         alert("Batch download failed.");
@@ -1089,6 +1149,8 @@ async function saveSelectedImages() {
         updateBatchButton();
     }
 }
+
+// ── Fullscreen ──────────────────────────────────────────────────────────────
 
 fullscreenBtn.addEventListener("click", () => {
     if (!document.fullscreenElement) {
@@ -1099,10 +1161,12 @@ fullscreenBtn.addEventListener("click", () => {
 });
 
 document.addEventListener("fullscreenchange", () => {
-    fullscreenBtn.title = document.fullscreenElement ? "Exit fullscreen" : "Enter fullscreen";
+    fullscreenBtn.title = document.fullscreenElement
+        ? "Exit fullscreen"
+        : "Enter fullscreen";
 });
 
-// ── Init ──────────────────────────────────────────────────────────────────────
+// ── Initialize Application ──────────────────────────────────────────────────
 
 restoreSettings();
 updateVideoFilter();
