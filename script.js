@@ -251,14 +251,12 @@ const STRIP_LAYOUTS = {
     }
 };
 
+// All three camera layouts use the same landscape aspect ratio.
 const LAYOUT_ASPECT = {
-    "vertical-4": 3 / 4,
-    "polaroid-1": 1,
-    "brick-4": window.createBrickStrip
-        ? window.createBrickStrip.photoAspect
-        : 300 / 204
+    "vertical-4": 4 / 3,
+    "polaroid-1": 4 / 3,
+    "brick-4": 4 / 3
 };
-
 // ── Filters ─────────────────────────────────────────────────────────────────
 
 const FILTERS = {
@@ -406,13 +404,11 @@ timerInput.addEventListener("change", saveSettings);
 // ── Strip Layout Picker ─────────────────────────────────────────────────────
 
 function applyLayoutAspect(layoutId) {
-    const aspect = LAYOUT_ASPECT[layoutId] || 0.75;
-
     const videoWrapper = document.querySelector(".video-wrapper");
 
     if (videoWrapper) {
-        videoWrapper.style.setProperty("--aspect", String(aspect));
-        videoWrapper.style.aspectRatio = String(aspect);
+        videoWrapper.style.setProperty("--aspect", "1.333333");
+        videoWrapper.style.aspectRatio = "4 / 3";
     }
 }
 

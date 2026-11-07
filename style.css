@@ -61,10 +61,39 @@ body {
 
 .workspace-grid {
     display: grid;
-    grid-template-columns: minmax(380px, 520px) 420px;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
     gap: 24px;
     justify-content: center;
     align-items: start;
+    width: 100%;
+}
+
+.left-column,
+.right-column {
+    width: 100%;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+}
+
+.right-column {
+    gap: 16px;
+}
+
+.camera-section {
+    width: 100%;
+    background: var(--surface);
+    border: 2px solid var(--brass);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 24px var(--shadow);
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+}
+
+.camera-frame {
+    width: 100%;
 }
 
 @media (max-width: 1000px) {
@@ -105,14 +134,21 @@ body {
 
 .video-wrapper {
     position: relative;
-    --aspect: 0.75;
-    width: min(100%, calc(620px * var(--aspect)));
-    margin: 0 auto;
-    aspect-ratio: var(--aspect);
+    width: 100%;
+    max-width: none;
+    aspect-ratio: 4 / 3;
     background: #000;
     border-radius: 8px;
     overflow: hidden;
     box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+}
+
+.video-wrapper video {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transform: scaleX(-1);
+    display: block;
 }
 
 video {
