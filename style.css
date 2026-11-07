@@ -1,4 +1,3 @@
-
 @font-face {
     font-family: "Little One";
     src: url("./assets/LittleOneDemoRegular.ttf") format("truetype");
@@ -28,10 +27,18 @@
     box-sizing: border-box;
 }
 
+html {
+    min-height: 100%;
+}
+
 body {
-    font-family: 'Special Elite', 'Courier New', monospace;
-    color: var(--ink);
     min-height: 100vh;
+    min-height: 100dvh;
+    padding: 20px;
+
+    font-family: "Special Elite", "Courier New", monospace;
+    color: var(--ink);
+
     background:
         repeating-linear-gradient(
             90deg,
@@ -48,94 +55,52 @@ body {
             var(--bg) 0%,
             var(--bg-2) 100%
         );
-    position: relative;
-    padding: 20px;
 }
 
+/* ── Main App Container ─────────────────────────────────────────────── */
+
 .container {
-    max-width: 1300px;
+    width: 100%;
+    max-width: 1000px;
     margin: 0 auto;
 }
 
-/* ── Two-Column Master Layout ─────────────────────────────────────────── */
-
 .workspace-grid {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-    gap: 24px;
-    justify-content: center;
-    align-items: start;
     width: 100%;
-}
-
-.left-column,
-.right-column {
-    width: 100%;
-    min-width: 0;
     display: flex;
     flex-direction: column;
-}
-
-.right-column {
     gap: 16px;
-}
-
-.camera-section {
-    width: 100%;
-    background: var(--surface);
-    border: 2px solid var(--brass);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 24px var(--shadow);
-    display: flex;
-    flex-direction: column;
     align-items: stretch;
 }
 
-.camera-frame {
+.camera-section,
+.sidebar-controls,
+.gallery-section {
     width: 100%;
-}
-
-@media (max-width: 1000px) {
-    .workspace-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
-.left-column {
-    display: flex;
-    flex-direction: column;
-}
-
-.right-column {
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-}
-
-/* ── Camera Section ───────────────────────────────────────────────────── */
-
-.camera-section {
+    min-width: 0;
     background: var(--surface);
     border: 2px solid var(--brass);
     border-radius: 12px;
     padding: 16px;
     box-shadow: 0 8px 24px var(--shadow);
+}
+
+/* ── Camera ──────────────────────────────────────────────────────────── */
+
+.camera-section {
     display: flex;
-    flex-direction: column;
-    align-items: center;
+    align-items: stretch;
+    justify-content: center;
 }
 
 .camera-frame {
     width: 100%;
-    display: flex;
-    justify-content: center;
+    min-width: 0;
 }
 
 .video-wrapper {
     position: relative;
     width: 100%;
-    max-width: none;
     aspect-ratio: 4 / 3;
     background: #000;
     border-radius: 8px;
@@ -144,81 +109,87 @@ body {
 }
 
 .video-wrapper video {
+    display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
+    object-position: center;
     transform: scaleX(-1);
-    display: block;
 }
 
-video {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    transform: scaleX(-1);
-    display: block;
-}
-
-/* ── Sidebar Controls ─────────────────────────────────────────────────── */
+/* ── Sidebar Controls ────────────────────────────────────────────────── */
 
 .sidebar-controls {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    background: var(--surface);
-    border: 2px solid var(--brass);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 24px var(--shadow);
+    gap: 14px;
 }
 
 .camera-options {
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
 }
 
 .option-label,
 .timer-label {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
+    min-width: 0;
     font-size: 0.85rem;
 }
 
 select,
 input[type="number"] {
     width: 100%;
-    padding: 7px 8px;
+    min-width: 0;
+    padding: 9px 10px;
     border: 1px solid var(--brass);
     border-radius: 6px;
     background: var(--paper);
+    color: var(--ink);
     font-family: inherit;
     font-size: 0.9rem;
 }
 
-/* ── Strip Layout Picker ──────────────────────────────────────────────── */
+/* ── Strip Layout Picker ─────────────────────────────────────────────── */
 
 .strip-layout-section {
-    margin-top: 2px;
+    width: 100%;
+}
+
+.strip-layout-label {
+    margin-bottom: 8px;
 }
 
 .strip-layout-picker {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(84px, 1fr));
-    gap: 8px;
-    margin-top: 4px;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
 }
 
 .strip-option {
+    min-width: 0;
+    min-height: 90px;
+    padding: 8px 6px;
+
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+
     background: var(--paper);
     border: 1px solid var(--brass);
-    padding: 6px;
     border-radius: 6px;
-    cursor: pointer;
-    text-align: center;
+
+    color: var(--ink);
     font-family: inherit;
     font-size: 0.85rem;
+    text-align: center;
+    cursor: pointer;
 }
 
 .strip-option.active {
@@ -226,75 +197,100 @@ input[type="number"] {
     color: #fff;
 }
 
-/* ── Capture Controls ─────────────────────────────────────────────────── */
+.strip-option:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* ── Capture Controls ────────────────────────────────────────────────── */
 
 .controls {
     display: grid;
-    grid-template-columns: 100px 1fr;
-    gap: 8px;
+    grid-template-columns: minmax(90px, 120px) minmax(0, 1fr);
+    gap: 10px;
     align-items: end;
 }
 
 .btn {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 6px;
     background: var(--brass);
     color: #fff;
-    border: none;
-    padding: 9px 16px;
-    border-radius: 6px;
-    cursor: pointer;
     font-family: inherit;
     font-weight: bold;
+    cursor: pointer;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
 }
 
 .btn-secondary {
-    background: var(--rust);
     width: 100%;
+    min-height: 38px;
+    background: var(--rust);
 }
 
 .btn-small {
-    padding: 4px 8px;
+    padding: 6px 10px;
     font-size: 0.75rem;
 }
 
-/* ── Gallery ──────────────────────────────────────────────────────────── */
+/* ── Session Gallery ────────────────────────────────────────────────── */
 
 .gallery-section {
-    background: var(--surface);
-    border: 2px solid var(--brass);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 24px var(--shadow);
+    height: 360px;
+    min-height: 260px;
     display: flex;
     flex-direction: column;
-    height: 320px;
+}
+
+.section-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-header h3 {
+    font-size: 1.05rem;
 }
 
 .gallery-scroll-area {
     flex: 1;
-    overflow-y: auto;
-    padding-right: 4px;
-    margin-top: 8px;
     min-height: 0;
+    width: 100%;
+    margin-top: 10px;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
 }
 
 #gallery {
+    width: 100%;
     display: flex;
     flex-wrap: wrap;
-    gap: 16px;
     justify-content: flex-start;
-    padding-bottom: 12px;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 6px 4px 12px;
 }
 
 .photo-item {
+    position: relative;
+    flex: 0 0 135px;
+    width: 135px;
+    min-width: 0;
+    padding: 10px 10px 30px;
+
     background: var(--paper);
-    padding: 10px 10px 30px 10px;
     border: 1px solid var(--line);
     box-shadow: 0 4px 12px rgba(0,0,0,0.15);
     transform: rotate(var(--tilt));
-    width: 135px;
-    position: relative;
     transition: transform 0.2s ease;
-    flex-shrink: 0;
 }
 
 .photo-item:hover {
@@ -303,8 +299,9 @@ input[type="number"] {
 }
 
 .photo-item img {
-    width: 100%;
     display: block;
+    width: 100%;
+    height: auto;
     cursor: pointer;
 }
 
@@ -319,62 +316,72 @@ input[type="number"] {
     position: absolute;
     top: 6px;
     right: 6px;
-    background: var(--rust);
-    color: #fff;
-    border: none;
+
     width: 20px;
     height: 20px;
-    border-radius: 50%;
-    cursor: pointer;
-    font-size: 10px;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    border: none;
+    border-radius: 50%;
+    background: var(--rust);
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
 }
 
 .download-btn {
     width: 100%;
     margin-top: 8px;
-    background: var(--brass);
+    padding: 5px;
+
     border: none;
-    color: #fff;
-    padding: 4px;
     border-radius: 4px;
-    cursor: pointer;
-    font-size: 0.8rem;
+    background: var(--brass);
+    color: #fff;
+
     font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
 }
 
 .empty-message {
-    text-align: center;
-    color: var(--ink-soft);
+    width: 100%;
     padding: 30px 10px;
+    color: var(--ink-soft);
+    text-align: center;
 }
 
 .batch-save-btn {
+    flex-shrink: 0;
+    width: 100%;
     margin-top: 10px;
+    padding: 9px;
+
+    border: none;
+    border-radius: 6px;
     background: var(--brass);
     color: #fff;
-    border: none;
-    padding: 8px;
-    width: 100%;
-    border-radius: 6px;
-    cursor: pointer;
+
     font-family: inherit;
     font-weight: bold;
-    flex-shrink: 0;
+    cursor: pointer;
 }
 
-.batch-save-btn.hidden {
-    display: none;
+.batch-save-btn.hidden,
+.hidden {
+    display: none !important;
 }
 
-/* ── App Header ───────────────────────────────────────────────────────── */
+/* ── Header ──────────────────────────────────────────────────────────── */
 
 .app-header {
-    text-align: center;
-    margin-bottom: 20px;
     position: relative;
+    width: 100%;
+    margin-bottom: 20px;
+    text-align: center;
 }
 
 .bulb-row {
@@ -387,8 +394,8 @@ input[type="number"] {
 .bulb-row span {
     width: 10px;
     height: 10px;
-    background: var(--brass-light);
     border-radius: 50%;
+    background: var(--brass-light);
     box-shadow: 0 0 6px var(--brass);
     animation: bulb-flicker 1.4s infinite alternate;
 }
@@ -429,13 +436,13 @@ input[type="number"] {
 }
 
 .script-tag {
-    font-family: 'Caveat', cursive;
+    font-family: "Caveat", cursive;
     font-size: 1.4rem;
     color: var(--rust);
 }
 
 h1 {
-    font-family: 'Playfair Display', serif;
+    font-family: "Playfair Display", serif;
     font-weight: 900;
     letter-spacing: 2px;
     font-size: 1.8rem;
@@ -443,52 +450,47 @@ h1 {
 
 .icon-btn {
     position: absolute;
-    right: 0;
     top: 50%;
+    right: 0;
     transform: translateY(-50%);
-    background: var(--surface);
-    border: 1px solid var(--brass);
+
     padding: 8px 12px;
+    border: 1px solid var(--brass);
     border-radius: 6px;
+
+    background: var(--surface);
+    color: var(--ink);
     cursor: pointer;
 }
 
-.section-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 4px;
-}
-
-.section-header h3 {
-    font-size: 1.05rem;
-}
-
-/* ── Flash Effect ─────────────────────────────────────────────────────── */
+/* ── Flash Effect ────────────────────────────────────────────────────── */
 
 #flash-overlay {
     position: fixed;
     inset: 0;
+    z-index: 9999;
     background: #fff;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.1s ease-in-out;
-    z-index: 9999;
 }
 
 #flash-overlay.flash-active {
     opacity: 1;
 }
 
-/* ── Image Preview Modal ──────────────────────────────────────────────── */
+/* ── Image Preview Modal ─────────────────────────────────────────────── */
 
 #image-preview-modal {
     position: fixed;
     inset: 0;
     z-index: 10000;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    padding: 12px;
 }
 
 #image-preview-modal.hidden {
@@ -504,91 +506,306 @@ h1 {
 
 .preview-dialog {
     position: relative;
-    max-width: min(92vw, 900px);
-    max-height: min(88vh, 900px);
-    padding: 20px 20px 28px;
-    border-radius: 16px;
-    background: rgba(246, 240, 227, 0.96);
-    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+    width: fit-content;
+    max-width: 96vw;
+    max-height: 92dvh;
+    padding: 48px 12px 16px;
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    border-radius: 16px;
+    background: rgba(246, 240, 227, 0.96);
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
 }
 
 .preview-toolbar {
     position: absolute;
     top: 10px;
     left: 50%;
+    z-index: 2;
     transform: translateX(-50%);
+
     display: flex;
     gap: 6px;
-    z-index: 2;
 }
 
 .preview-tool {
+    padding: 5px 9px;
     border: 1px solid rgba(59, 47, 34, 0.2);
+    border-radius: 999px;
+
     background: rgba(255, 255, 255, 0.86);
     color: var(--ink);
-    border-radius: 999px;
-    padding: 4px 8px;
-    cursor: pointer;
     font: inherit;
+    cursor: pointer;
 }
 
 .preview-close {
     position: absolute;
     top: 8px;
     right: 8px;
+    z-index: 2;
+
     width: 34px;
     height: 34px;
+
     border: 1px solid rgba(59, 47, 34, 0.15);
     border-radius: 50%;
+
     background: rgba(255, 255, 255, 0.88);
     color: var(--ink);
     font-size: 1.2rem;
     cursor: pointer;
-    z-index: 2;
 }
 
 .preview-image-frame {
-    border: 1px solid rgba(59, 47, 34, 0.14);
-    border-radius: 12px;
+    max-width: 100%;
+    max-height: 78dvh;
     padding: 6px;
-    background: rgba(255, 255, 255, 0.75);
+
     display: flex;
     align-items: center;
     justify-content: center;
+
+    border: 1px solid rgba(59, 47, 34, 0.14);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.75);
     overflow: auto;
 }
 
 #preview-image {
     display: block;
     max-width: 100%;
-    max-height: 100%;
+    max-height: 76dvh;
     width: auto;
     height: auto;
-    object-fit: contain;
+
     border-radius: 8px;
-    transition: transform 0.2s ease;
+    object-fit: contain;
     transform-origin: center center;
+    transition: transform 0.2s ease;
     cursor: zoom-in;
     user-select: none;
 }
 
-/* ── Countdown Overlay ────────────────────────────────────────────────── */
+/* ── Countdown ──────────────────────────────────────────────────────── */
 
 .countdown-overlay {
     position: absolute;
     inset: 0;
-    background: rgba(0,0,0,0.4);
+
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 4rem;
+
+    background: rgba(0,0,0,0.4);
     color: #fff;
+    font-size: clamp(3rem, 10vw, 5rem);
     font-weight: bold;
 }
 
 .countdown-overlay.hidden {
     display: none;
+}
+
+/* ── Fullscreen ─────────────────────────────────────────────────────── */
+
+#app-container:fullscreen {
+    width: 100%;
+    max-width: none;
+    min-height: 100%;
+    margin: 0;
+    padding: 20px;
+    overflow-y: auto;
+    background:
+        repeating-linear-gradient(
+            90deg,
+            rgba(59,47,34,0.03) 0 2px,
+            transparent 2px 46px
+        ),
+        linear-gradient(180deg, var(--bg), var(--bg-2));
+}
+
+body.app-fullscreen {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    height: 100dvh;
+    min-height: 0;
+    padding: 0;
+    overflow: auto;
+}
+
+body.app-fullscreen #app-container {
+    width: 100%;
+    max-width: 1000px;
+    min-height: 100%;
+    margin: 0 auto;
+    padding: 16px;
+}
+
+/* ── Tablet ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+    body {
+        padding: 14px;
+    }
+
+    .container {
+        max-width: 100%;
+    }
+
+    .camera-section,
+    .sidebar-controls,
+    .gallery-section {
+        padding: 12px;
+    }
+
+    .gallery-section {
+        height: 330px;
+    }
+
+    .workspace-grid {
+        gap: 14px;
+    }
+}
+
+/* ── Mobile ──────────────────────────────────────────────────────────── */
+
+@media (max-width: 480px) {
+    body {
+        padding: 10px;
+    }
+
+    .app-header {
+        margin-bottom: 14px;
+        padding: 0 42px;
+    }
+
+    .bulb-row {
+        gap: 8px;
+    }
+
+    .bulb-row span {
+        width: 8px;
+        height: 8px;
+    }
+
+    .script-tag {
+        font-size: 1.2rem;
+    }
+
+    h1 {
+        font-size: 1.45rem;
+        letter-spacing: 1px;
+    }
+
+    .icon-btn {
+        right: -36px;
+        padding: 7px 9px;
+    }
+
+    .camera-section,
+    .sidebar-controls,
+    .gallery-section {
+        padding: 10px;
+        border-radius: 9px;
+    }
+
+    .video-wrapper {
+        aspect-ratio: 4 / 3;
+    }
+
+    .camera-options {
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+    }
+
+    .option-label,
+    .timer-label {
+        font-size: 0.78rem;
+    }
+
+    select,
+    input[type="number"] {
+        padding: 8px 6px;
+        font-size: 0.8rem;
+    }
+
+    .strip-layout-picker {
+        gap: 6px;
+    }
+
+    .strip-option {
+        min-height: 82px;
+        padding: 6px 3px;
+        font-size: 0.72rem;
+    }
+
+    .controls {
+        grid-template-columns: 90px minmax(0, 1fr);
+        gap: 8px;
+    }
+
+    .btn-secondary {
+        padding: 9px 5px;
+        font-size: 0.8rem;
+    }
+
+    .gallery-section {
+        height: 300px;
+    }
+
+    #gallery {
+        gap: 12px;
+    }
+
+    .photo-item {
+        flex-basis: 115px;
+        width: 115px;
+    }
+
+    .preview-dialog {
+        max-width: 98vw;
+        padding: 48px 8px 12px;
+    }
+
+    .preview-image-frame {
+        max-height: 76dvh;
+    }
+}
+
+/* ── Short Landscape Screens ─────────────────────────────────────────── */
+
+@media (orientation: landscape) and (max-height: 600px) {
+    body {
+        padding: 8px;
+    }
+
+    .app-header {
+        margin-bottom: 10px;
+    }
+
+    .bulb-row {
+        display: none;
+    }
+
+    .script-tag {
+        font-size: 1rem;
+    }
+
+    h1 {
+        font-size: 1.3rem;
+    }
+
+    .video-wrapper {
+        max-height: 65dvh;
+    }
+
+    .gallery-section {
+        height: 260px;
+    }
 }

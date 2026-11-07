@@ -21,6 +21,8 @@ const zoomInBtn = document.getElementById("zoom-in-btn");
 const zoomOutBtn = document.getElementById("zoom-out-btn");
 const zoomResetBtn = document.getElementById("zoom-reset-btn");
 
+const appContainer = document.getElementById("app-container");
+
 let currentStream = null;
 let isCapturing = false;
 let selectedStripLayout = "vertical-4";
@@ -1148,13 +1150,83 @@ async function saveSelectedImages() {
 
 // ── Fullscreen ──────────────────────────────────────────────────────────────
 
+// ── Responsive Fullscreen ─────────────────────────────────────────────
+
+function isAppFullscreen() {
+    return (
+        document.fullscreenElement === appContainer ||
+        document.webkitFullscreenElement === appContainer ||
+        document.body.classList.contains("app-fullscreen")
+    );
+}
+
+function updateFullscreenButton() {
+    const active = isAppFullscreen();
+
+    fullscreenBtn.textContent = active ? "×" : "⛶";
+    fullscreenBtn.title = active ? "Exit fullscreen" : "Enter fullscreen";
+    fullscreenBtn.setAttribute(
+        "aria-label",
+        active ? "Exit fullscreen" : "Enter fullscreen"
+    );
+}
+
+async function enterAppFullscreen() {
+    try {
+        if (appContainer.requestFullscreen) {
+            await appContainer.requestFullscreen();
+        } else if (appContainer.webkitRequestFullscreen) {
+            appContainer.webkitRequestFullscreen();
+        } else {
+            // Visual fullscreen fallback for browsers
+            // that do not support the Fullscreen API.
+            document.body.classList.add("app-fullscreen");
+        }
+    } catch (error) {
+        console.warn("Native fullscreen unavailable. Using fallback.", error);
+        document.body.classList.add("app-fullscreen");
+    }
+
+    updateFullscreenButton();
+}
+
+async function exitAppFullscreen() {
+    try {
+        if (document.fullscreenElement && document.exitFullscreen) {
+            await document.exitFullscreen();
+        } else if (
+            document.webkitFullscreenElement &&
+            document.webkitExitFullscreen
+        ) {
+            document.webkitExitFullscreen();
+        }
+    } catch (error) {
+        console.warn("Could not exit native fullscreen.", error);
+    }
+
+    document.body.classList.remove("app-fullscreen");
+    updateFullscreenButton();
+}
+
 fullscreenBtn.addEventListener("click", () => {
-    if (!document.fullscreenElement) {
-        document.documentElement.requestFullscreen().catch(() => {});
+    if (isAppFullscreen()) {
+        exitAppFullscreen();
     } else {
-        document.exitFullscreen();
+        enterAppFullscreen();
     }
 });
+
+document.addEventListener("fullscreenchange", updateFullscreenButton);
+document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
+
+document.addEventListener("keydown", (e) => {
+    if (e.key === "Escape" && document.body.classList.contains("app-fullscreen")) {
+        document.body.classList.remove("app-fullscreen");
+        updateFullscreenButton();
+    }
+});
+
+updateFullscreenButton();
 
 document.addEventListener("fullscreenchange", () => {
     fullscreenBtn.title = document.fullscreenElement
