@@ -1,5 +1,7 @@
+// ═══════════════════════════════════════════════════════════════════════════
+// DOM ELEMENTS
+// ═══════════════════════════════════════════════════════════════════════════
 
-// DOM Elements
 const video = document.getElementById("video");
 const stripBtn = document.getElementById("strip-btn");
 const gallery = document.getElementById("gallery");
@@ -20,7 +22,6 @@ const closePreviewBtn = document.getElementById("close-preview-btn");
 const zoomInBtn = document.getElementById("zoom-in-btn");
 const zoomOutBtn = document.getElementById("zoom-out-btn");
 const zoomResetBtn = document.getElementById("zoom-reset-btn");
-
 const appContainer = document.getElementById("app-container");
 
 let currentStream = null;
@@ -29,7 +30,9 @@ let selectedStripLayout = "vertical-4";
 let previewZoom = 1;
 let previewSource = null;
 
-// ── Persistence ─────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// STORAGE
+// ═══════════════════════════════════════════════════════════════════════════
 
 const STORAGE_KEYS = {
     settings: "photobooth:settings:v1",
@@ -49,7 +52,7 @@ function storageGet(key) {
     try {
         const raw = localStorage.getItem(key);
         return raw ? JSON.parse(raw) : null;
-    } catch (_) {
+    } catch (error) {
         return null;
     }
 }
@@ -58,7 +61,7 @@ function storageSet(key, value) {
     try {
         localStorage.setItem(key, JSON.stringify(value));
         return true;
-    } catch (_) {
+    } catch (error) {
         return false;
     }
 }
@@ -87,9 +90,10 @@ function restoreSettings() {
     }
 
     if (saved.timer !== undefined && saved.timer !== "") {
-        const t = parseInt(saved.timer, 10);
-        if (!Number.isNaN(t)) {
-            timerInput.value = Math.min(60, Math.max(0, t));
+        const timer = parseInt(saved.timer, 10);
+
+        if (!Number.isNaN(timer)) {
+            timerInput.value = Math.min(60, Math.max(0, timer));
         }
     }
 
@@ -120,7 +124,6 @@ function compressForStorage(dataUrl) {
 
             ctx.fillStyle = "#ffffff";
             ctx.fillRect(0, 0, canvas.width, canvas.height);
-
             ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
 
             resolve(canvas.toDataURL("image/jpeg", STORED_JPEG_QUALITY));
@@ -153,18 +156,18 @@ async function persistGallery() {
 
         const entries = [];
 
-        for (const el of items) {
-            if (!el.imageData) continue;
+        for (const item of items) {
+            if (!item.imageData) continue;
 
-            if (!el.storedData || el.storedSource !== el.imageData) {
-                el.storedData = await compressForStorage(el.imageData);
-                el.storedSource = el.imageData;
+            if (!item.storedData || item.storedSource !== item.imageData) {
+                item.storedData = await compressForStorage(item.imageData);
+                item.storedSource = item.imageData;
             }
 
-            if (el.storedData) {
+            if (item.storedData) {
                 entries.push({
-                    data: el.storedData,
-                    label: el.querySelector("img")?.alt || ""
+                    data: item.storedData,
+                    label: item.querySelector("img")?.alt || ""
                 });
             }
         }
@@ -179,7 +182,7 @@ async function persistGallery() {
         if (!entries.length) {
             try {
                 localStorage.removeItem(STORAGE_KEYS.gallery);
-            } catch (_) {}
+            } catch (error) {}
         }
     } finally {
         isPersisting = false;
@@ -210,13 +213,13 @@ function restoreGallery() {
                 continue;
             }
 
-            const container = addPhotoToGallery(
+            const item = addPhotoToGallery(
                 entry.data,
                 entry.label || "Saved strip"
             );
 
-            container.storedData = entry.data;
-            container.storedSource = entry.data;
+            item.storedData = entry.data;
+            item.storedSource = entry.data;
         }
     } finally {
         isRestoringGallery = false;
@@ -230,7 +233,9 @@ function imageExtension(dataUrl) {
         : "png";
 }
 
-// ── Strip Layouts ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// STRIP LAYOUTS
+// ═══════════════════════════════════════════════════════════════════════════
 
 const STRIP_LAYOUTS = {
     "vertical-4": {
@@ -239,12 +244,14 @@ const STRIP_LAYOUTS = {
         rows: 4,
         label: "Classic 4"
     },
+
     "polaroid-1": {
         shots: 1,
         cols: 1,
         rows: 1,
         label: "Polaroid"
     },
+
     "brick-4": {
         shots: 4,
         cols: 1,
@@ -253,51 +260,64 @@ const STRIP_LAYOUTS = {
     }
 };
 
-// All three camera layouts use the same landscape aspect ratio.
+// All camera previews use the same landscape aspect ratio.
 const LAYOUT_ASPECT = {
     "vertical-4": 4 / 3,
     "polaroid-1": 4 / 3,
     "brick-4": 4 / 3
 };
-// ── Filters ─────────────────────────────────────────────────────────────────
+
+// ═══════════════════════════════════════════════════════════════════════════
+// FILTERS
+// ═══════════════════════════════════════════════════════════════════════════
 
 const FILTERS = {
     none: {
         css: ""
     },
+
     grayscale: {
         css: "grayscale(100%)"
     },
+
     sepia: {
         css: "sepia(100%)"
     },
+
     noir: {
         css: "grayscale(100%) contrast(140%) brightness(85%)",
         vignette: 0.45
     },
+
     vintage: {
         css: "sepia(55%) saturate(75%) contrast(90%) brightness(105%)",
         vignette: 0.3
     },
+
     vivid: {
         css: "saturate(165%) contrast(115%) brightness(105%)"
     },
+
     cool: {
         css: "saturate(115%) hue-rotate(15deg) brightness(105%)"
     },
+
     warm: {
         css: "saturate(120%) sepia(18%) brightness(108%)"
     },
+
     dreamy: {
         css: "contrast(85%) brightness(112%) saturate(80%) blur(0.5px)"
     }
 };
 
-// ── Camera ──────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// CAMERA
+// ═══════════════════════════════════════════════════════════════════════════
 
 async function initCameras() {
     if (!navigator.mediaDevices?.getUserMedia) {
-        console.error("Camera API not supported in this browser.");
+        console.error("Camera API not supported.");
 
         cameraSelect.innerHTML =
             `<option value="">Camera unsupported</option>`;
@@ -311,36 +331,37 @@ async function initCameras() {
             video: true
         });
 
-        tempStream.getTracks().forEach((t) => t.stop());
+        tempStream.getTracks().forEach((track) => track.stop());
 
         const devices = await navigator.mediaDevices.enumerateDevices();
 
         const cameras = devices.filter(
-            (d) => d.kind === "videoinput"
+            (device) => device.kind === "videoinput"
         );
 
         cameraSelect.innerHTML = cameras.length
-            ? cameras.map((cam, i) =>
-                `<option value="${cam.deviceId}">${cam.label || `Camera ${i + 1}`}</option>`
+            ? cameras.map((camera, index) =>
+                `<option value="${camera.deviceId}">${camera.label || `Camera ${index + 1}`}</option>`
             ).join("")
             : `<option value="">No camera found</option>`;
 
-        if (cameras.length) {
-            const savedCamera = loadSettings().camera;
+        if (!cameras.length) return;
 
-            const startId = cameras.some(
-                (c) => c.deviceId === savedCamera
-            )
-                ? savedCamera
-                : cameras[0].deviceId;
+        const savedCamera = loadSettings().camera;
 
-            cameraSelect.value = startId;
+        const startId = cameras.some(
+            (camera) => camera.deviceId === savedCamera
+        )
+            ? savedCamera
+            : cameras[0].deviceId;
 
-            await startCamera(startId);
-            saveSettings();
-        }
-    } catch (err) {
-        console.error("Camera init error:", err);
+        cameraSelect.value = startId;
+
+        await startCamera(startId);
+        saveSettings();
+
+    } catch (error) {
+        console.error("Camera initialization error:", error);
 
         cameraSelect.innerHTML =
             `<option value="">Camera unavailable</option>`;
@@ -351,7 +372,7 @@ async function initCameras() {
 
 async function startCamera(deviceId) {
     if (currentStream) {
-        currentStream.getTracks().forEach((t) => t.stop());
+        currentStream.getTracks().forEach((track) => track.stop());
     }
 
     const constraints = {
@@ -374,8 +395,9 @@ async function startCamera(deviceId) {
 
         video.srcObject = currentStream;
         await video.play();
-    } catch (err) {
-        console.error("Camera start error:", err);
+
+    } catch (error) {
+        console.error("Camera start error:", error);
         alert("Could not start the selected camera.");
     }
 }
@@ -388,11 +410,12 @@ cameraSelect.addEventListener("change", () => {
     saveSettings();
 });
 
-// ── Video Filters ───────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// VIDEO FILTERS
+// ═══════════════════════════════════════════════════════════════════════════
 
 function updateVideoFilter() {
     const filter = FILTERS[filterSelect.value] || FILTERS.none;
-
     video.style.filter = filter.css || "none";
 }
 
@@ -403,21 +426,24 @@ filterSelect.addEventListener("change", () => {
 
 timerInput.addEventListener("change", saveSettings);
 
-// ── Strip Layout Picker ─────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// STRIP LAYOUT PICKER
+// ═══════════════════════════════════════════════════════════════════════════
 
 function applyLayoutAspect(layoutId) {
     const videoWrapper = document.querySelector(".video-wrapper");
 
-    if (videoWrapper) {
-        videoWrapper.style.setProperty("--aspect", "1.333333");
-        videoWrapper.style.aspectRatio = "4 / 3";
-    }
+    if (!videoWrapper) return;
+
+    const aspect = LAYOUT_ASPECT[layoutId] || (4 / 3);
+
+    videoWrapper.style.aspectRatio = String(aspect);
 }
 
-stripLayoutPicker.addEventListener("click", (e) => {
-    const option = e.target.closest(".strip-option");
+stripLayoutPicker.addEventListener("click", (event) => {
+    const option = event.target.closest(".strip-option");
 
-    if (!option) return;
+    if (!option || !STRIP_LAYOUTS[option.dataset.layout]) return;
 
     selectedStripLayout = option.dataset.layout;
 
@@ -429,35 +455,27 @@ stripLayoutPicker.addEventListener("click", (e) => {
     saveSettings();
 });
 
-// ── Save Captured Photo Strip ───────────────────────────────────────────────
-
-function saveCapturedStrip(stripDataUrl) {
-    const layout = STRIP_LAYOUTS[selectedStripLayout];
-
-    // Save directly to the gallery. No sticker editor.
-    addPhotoToGallery(
-        stripDataUrl,
-        `${layout.label} strip`
-    );
-}
-
-// ── Audio and Visual Effects ────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// AUDIO AND VISUAL EFFECTS
+// ═══════════════════════════════════════════════════════════════════════════
 
 function playShutterSound() {
     try {
-        const ctx = new (
-            window.AudioContext || window.webkitAudioContext
-        )();
+        const AudioContextClass =
+            window.AudioContext || window.webkitAudioContext;
 
-        const osc = ctx.createOscillator();
+        if (!AudioContextClass) return;
+
+        const ctx = new AudioContextClass();
+        const oscillator = ctx.createOscillator();
         const gain = ctx.createGain();
 
-        osc.connect(gain);
+        oscillator.connect(gain);
         gain.connect(ctx.destination);
 
-        osc.frequency.setValueAtTime(800, ctx.currentTime);
+        oscillator.frequency.setValueAtTime(800, ctx.currentTime);
 
-        osc.frequency.exponentialRampToValueAtTime(
+        oscillator.frequency.exponentialRampToValueAtTime(
             100,
             ctx.currentTime + 0.08
         );
@@ -469,12 +487,17 @@ function playShutterSound() {
             ctx.currentTime + 0.08
         );
 
-        osc.start(ctx.currentTime);
-        osc.stop(ctx.currentTime + 0.08);
-    } catch (_) {}
+        oscillator.start(ctx.currentTime);
+        oscillator.stop(ctx.currentTime + 0.08);
+
+        oscillator.onended = () => ctx.close();
+
+    } catch (error) {}
 }
 
 function triggerFlash() {
+    if (!flashOverlay) return;
+
     flashOverlay.classList.add("flash-active");
 
     setTimeout(() => {
@@ -507,7 +530,6 @@ function showCountdown(seconds) {
         };
 
         countdownNumber.textContent = remaining;
-
         setTimeout(tick, 1000);
     });
 }
@@ -518,14 +540,16 @@ function setControlsDisabled(disabled) {
     cameraSelect.disabled = disabled;
     filterSelect.disabled = disabled;
 
-    stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
-        btn.disabled = disabled;
+    stripLayoutPicker.querySelectorAll(".strip-option").forEach((button) => {
+        button.disabled = disabled;
     });
 
     isCapturing = disabled;
 }
 
-// ── Image Processing ────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// IMAGE PROCESSING
+// ═══════════════════════════════════════════════════════════════════════════
 
 function getCoverCropRect(srcWidth, srcHeight, targetAspect) {
     const srcAspect = srcWidth / srcHeight;
@@ -566,11 +590,11 @@ function applyVignette(ctx, width, height, strength) {
 function drawDateStamp(ctx, canvasWidth, canvasHeight) {
     const now = new Date();
 
-    const yy = String(now.getFullYear()).slice(-2);
-    const mm = String(now.getMonth() + 1).padStart(2, "0");
-    const dd = String(now.getDate()).padStart(2, "0");
+    const year = String(now.getFullYear()).slice(-2);
+    const month = String(now.getMonth() + 1).padStart(2, "0");
+    const day = String(now.getDate()).padStart(2, "0");
 
-    const text = `'${yy} ${mm} ${dd}`;
+    const text = `'${year} ${month} ${day}`;
 
     const fontSize = Math.max(
         12,
@@ -641,7 +665,6 @@ function captureFrame() {
     );
 
     ctx.restore();
-
     ctx.filter = "none";
 
     if (filterInfo.vignette) {
@@ -660,8 +683,8 @@ function captureFrame() {
 
 function loadImages(imageDataArray) {
     return Promise.all(
-        imageDataArray.map(
-            (src) => new Promise((resolve, reject) => {
+        imageDataArray.map((src) =>
+            new Promise((resolve, reject) => {
                 const img = new Image();
 
                 img.onload = () => resolve(img);
@@ -671,6 +694,10 @@ function loadImages(imageDataArray) {
         )
     );
 }
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CREATE PHOTO STRIPS
+// ═══════════════════════════════════════════════════════════════════════════
 
 function createPhotoStrip(layoutId, imageDataArray) {
     if (layoutId === "polaroid-1") {
@@ -686,6 +713,10 @@ function createPhotoStrip(layoutId, imageDataArray) {
     }
 
     const layout = STRIP_LAYOUTS[layoutId];
+
+    if (!layout) {
+        throw new Error("Invalid strip layout.");
+    }
 
     const gap = 12;
     const padding = 24;
@@ -727,9 +758,9 @@ function createPhotoStrip(layoutId, imageDataArray) {
         ctx.fillStyle = "#f6f0e3";
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        loaded.forEach((img, i) => {
-            const col = i % layout.cols;
-            const row = Math.floor(i / layout.cols);
+        loaded.forEach((img, index) => {
+            const col = index % layout.cols;
+            const row = Math.floor(index / layout.cols);
 
             const x = padding + col * (cellW + gap);
             const y = padding + row * (cellH + gap);
@@ -762,7 +793,9 @@ function createPolaroidFrame(imageData) {
     });
 }
 
-// ── Gallery ─────────────────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// GALLERY
+// ═══════════════════════════════════════════════════════════════════════════
 
 function updateEmptyState() {
     const hasPhotos = gallery.querySelector(".photo-item") !== null;
@@ -779,7 +812,6 @@ function setPreviewZoom(level) {
 
     if (previewImage) {
         previewImage.style.transform = `scale(${previewZoom})`;
-
         previewImage.style.cursor =
             previewZoom > 1 ? "grab" : "zoom-in";
     }
@@ -845,10 +877,10 @@ function closePreview() {
 }
 
 if (previewModal) {
-    previewModal.addEventListener("click", (e) => {
+    previewModal.addEventListener("click", (event) => {
         if (
-            e.target.classList.contains("preview-backdrop") ||
-            e.target === previewModal
+            event.target.classList.contains("preview-backdrop") ||
+            event.target === previewModal
         ) {
             closePreview();
         }
@@ -876,7 +908,7 @@ if (zoomResetBtn) {
 }
 
 if (previewImage) {
-    previewImage.addEventListener("wheel", (e) => {
+    previewImage.addEventListener("wheel", (event) => {
         if (
             !previewModal ||
             previewModal.classList.contains("hidden")
@@ -884,11 +916,11 @@ if (previewImage) {
             return;
         }
 
-        e.preventDefault();
+        event.preventDefault();
 
-        const delta = e.deltaY < 0 ? 0.15 : -0.15;
-
+        const delta = event.deltaY < 0 ? 0.15 : -0.15;
         setPreviewZoom(previewZoom + delta);
+
     }, { passive: false });
 
     previewImage.addEventListener("dblclick", () => {
@@ -900,9 +932,9 @@ if (previewImage) {
     });
 }
 
-document.addEventListener("keydown", (e) => {
+document.addEventListener("keydown", (event) => {
     if (
-        e.key === "Escape" &&
+        event.key === "Escape" &&
         previewModal &&
         !previewModal.classList.contains("hidden")
     ) {
@@ -916,14 +948,14 @@ document.addEventListener("keydown", (e) => {
         return;
     }
 
-    if (e.key === "+" || e.key === "=") {
-        e.preventDefault();
+    if (event.key === "+" || event.key === "=") {
+        event.preventDefault();
         setPreviewZoom(previewZoom + 0.25);
-    } else if (e.key === "-") {
-        e.preventDefault();
+    } else if (event.key === "-") {
+        event.preventDefault();
         setPreviewZoom(previewZoom - 0.25);
-    } else if (e.key === "0") {
-        e.preventDefault();
+    } else if (event.key === "0") {
+        event.preventDefault();
         resetPreviewZoom();
     }
 });
@@ -942,7 +974,6 @@ function addPhotoToGallery(imageData, label) {
 
     checkbox.type = "checkbox";
     checkbox.className = "photo-checkbox";
-
     checkbox.addEventListener("change", updateBatchButton);
 
     const deleteBtn = document.createElement("button");
@@ -996,14 +1027,36 @@ function addPhotoToGallery(imageData, label) {
     return photoContainer;
 }
 
-// ── Strip Capture Mode ──────────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// PHOTO STRIP CAPTURE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function saveCapturedStrip(stripDataUrl) {
+    const layout = STRIP_LAYOUTS[selectedStripLayout];
+
+    // Save directly to the gallery. No sticker editor.
+    addPhotoToGallery(
+        stripDataUrl,
+        `${layout.label} strip`
+    );
+}
 
 async function capturePhotoStrip() {
     const layout = STRIP_LAYOUTS[selectedStripLayout];
 
+    if (!layout) {
+        alert("Please select a valid photo layout.");
+        return;
+    }
+
+    if (!currentStream || !video.videoWidth) {
+        alert("Please wait for the camera to become ready.");
+        return;
+    }
+
     const countdown = Math.min(
         60,
-        Math.max(0, parseInt(timerInput.value, 10) || 3)
+        Math.max(0, parseInt(timerInput.value, 10) || 0)
     );
 
     const shots = [];
@@ -1025,15 +1078,15 @@ async function capturePhotoStrip() {
             shots
         );
 
-        // Directly save the finished strip. No icons or sticker editor.
         saveCapturedStrip(stripData);
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error("Photo strip creation error:", error);
 
         alert(
-            "Could not create photo strip. Make sure the camera is ready."
+            "Could not create photo strip. Make sure the camera is ready and try again."
         );
+
     } finally {
         setControlsDisabled(false);
     }
@@ -1045,7 +1098,21 @@ stripBtn.addEventListener("click", () => {
     capturePhotoStrip();
 });
 
-// ── Downloads and Batch Selection ───────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// DOWNLOADS
+// ═══════════════════════════════════════════════════════════════════════════
+
+function downloadBlob(dataUrl, filename) {
+    const link = document.createElement("a");
+
+    link.download = filename;
+    link.href = dataUrl;
+    link.style.display = "none";
+
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
 function saveAndDownloadImage(imageData, filename, button) {
     button.disabled = true;
@@ -1061,29 +1128,15 @@ function saveAndDownloadImage(imageData, filename, button) {
     }, 1500);
 }
 
-function downloadBlob(dataUrl, filename) {
-    const link = document.createElement("a");
-
-    link.download = filename;
-    link.href = dataUrl;
-    link.style.display = "none";
-
-    document.body.appendChild(link);
-
-    link.click();
-
-    document.body.removeChild(link);
-}
-
 selectAllBtn.addEventListener("click", () => {
     const checkboxes = document.querySelectorAll(".photo-checkbox");
 
     const allChecked =
         checkboxes.length > 0 &&
-        Array.from(checkboxes).every((cb) => cb.checked);
+        Array.from(checkboxes).every((checkbox) => checkbox.checked);
 
-    checkboxes.forEach((cb) => {
-        cb.checked = !allChecked;
+    checkboxes.forEach((checkbox) => {
+        checkbox.checked = !allChecked;
     });
 
     selectAllBtn.textContent = allChecked
@@ -1110,8 +1163,8 @@ async function saveSelectedImages() {
     const selected = Array.from(
         document.querySelectorAll(".photo-checkbox:checked")
     )
-        .map((cb) => cb.closest(".photo-item"))
-        .filter((el) => el?.imageData);
+        .map((checkbox) => checkbox.closest(".photo-item"))
+        .filter((item) => item?.imageData);
 
     if (!selected.length) {
         alert("Please select at least one image.");
@@ -1126,31 +1179,32 @@ async function saveSelectedImages() {
     try {
         const timestamp = Date.now();
 
-        selected.forEach((container, index) => {
+        selected.forEach((item, index) => {
             const filename =
-                `photobooth_batch_${timestamp}_${index + 1}.${imageExtension(container.imageData)}`;
+                `photobooth_batch_${timestamp}_${index + 1}.${imageExtension(item.imageData)}`;
 
-            downloadBlob(container.imageData, filename);
+            downloadBlob(item.imageData, filename);
         });
 
-        selected.forEach((container) => {
-            container.querySelector(".photo-checkbox").checked = false;
+        selected.forEach((item) => {
+            item.querySelector(".photo-checkbox").checked = false;
         });
 
         selectAllBtn.textContent = "Select All";
 
-    } catch (err) {
-        console.error(err);
+    } catch (error) {
+        console.error("Batch download error:", error);
         alert("Batch download failed.");
+
     } finally {
         batchSaveBtn.disabled = false;
         updateBatchButton();
     }
 }
 
-// ── Fullscreen ──────────────────────────────────────────────────────────────
-
-// ── Responsive Fullscreen ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// FULLSCREEN
+// ═══════════════════════════════════════════════════════════════════════════
 
 function isAppFullscreen() {
     return (
@@ -1165,6 +1219,7 @@ function updateFullscreenButton() {
 
     fullscreenBtn.textContent = active ? "×" : "⛶";
     fullscreenBtn.title = active ? "Exit fullscreen" : "Enter fullscreen";
+
     fullscreenBtn.setAttribute(
         "aria-label",
         active ? "Exit fullscreen" : "Enter fullscreen"
@@ -1175,13 +1230,14 @@ async function enterAppFullscreen() {
     try {
         if (appContainer.requestFullscreen) {
             await appContainer.requestFullscreen();
+
         } else if (appContainer.webkitRequestFullscreen) {
             appContainer.webkitRequestFullscreen();
+
         } else {
-            // Visual fullscreen fallback for browsers
-            // that do not support the Fullscreen API.
             document.body.classList.add("app-fullscreen");
         }
+
     } catch (error) {
         console.warn("Native fullscreen unavailable. Using fallback.", error);
         document.body.classList.add("app-fullscreen");
@@ -1194,12 +1250,14 @@ async function exitAppFullscreen() {
     try {
         if (document.fullscreenElement && document.exitFullscreen) {
             await document.exitFullscreen();
+
         } else if (
             document.webkitFullscreenElement &&
             document.webkitExitFullscreen
         ) {
             document.webkitExitFullscreen();
         }
+
     } catch (error) {
         console.warn("Could not exit native fullscreen.", error);
     }
@@ -1219,8 +1277,11 @@ fullscreenBtn.addEventListener("click", () => {
 document.addEventListener("fullscreenchange", updateFullscreenButton);
 document.addEventListener("webkitfullscreenchange", updateFullscreenButton);
 
-document.addEventListener("keydown", (e) => {
-    if (e.key === "Escape" && document.body.classList.contains("app-fullscreen")) {
+document.addEventListener("keydown", (event) => {
+    if (
+        event.key === "Escape" &&
+        document.body.classList.contains("app-fullscreen")
+    ) {
         document.body.classList.remove("app-fullscreen");
         updateFullscreenButton();
     }
@@ -1228,16 +1289,14 @@ document.addEventListener("keydown", (e) => {
 
 updateFullscreenButton();
 
-document.addEventListener("fullscreenchange", () => {
-    fullscreenBtn.title = document.fullscreenElement
-        ? "Exit fullscreen"
-        : "Enter fullscreen";
-});
-
-// ── Initialize Application ──────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// INITIALIZE APPLICATION
+// ═══════════════════════════════════════════════════════════════════════════
 
 restoreSettings();
 updateVideoFilter();
 applyLayoutAspect(selectedStripLayout);
 restoreGallery();
+updateEmptyState();
+updateBatchButton();
 initCameras();

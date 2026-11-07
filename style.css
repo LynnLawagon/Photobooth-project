@@ -35,7 +35,6 @@ body {
     min-height: 100vh;
     min-height: 100dvh;
     padding: 20px;
-
     font-family: "Special Elite", "Courier New", monospace;
     color: var(--ink);
 
@@ -57,325 +56,15 @@ body {
         );
 }
 
-/* ── Main App Container ─────────────────────────────────────────────── */
+/* ── APP CONTAINER ───────────────────────────── */
 
 .container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1400px;
     margin: 0 auto;
 }
 
-.workspace-grid {
-    width: 100%;
-    display: flex;
-    flex-direction: column;
-    gap: 16px;
-    align-items: stretch;
-}
-
-.camera-section,
-.sidebar-controls,
-.gallery-section {
-    width: 100%;
-    min-width: 0;
-    background: var(--surface);
-    border: 2px solid var(--brass);
-    border-radius: 12px;
-    padding: 16px;
-    box-shadow: 0 8px 24px var(--shadow);
-}
-
-/* ── Camera ──────────────────────────────────────────────────────────── */
-
-.camera-section {
-    display: flex;
-    align-items: stretch;
-    justify-content: center;
-}
-
-.camera-frame {
-    width: 100%;
-    min-width: 0;
-}
-
-.video-wrapper {
-    position: relative;
-    width: 100%;
-    aspect-ratio: 4 / 3;
-    background: #000;
-    border-radius: 8px;
-    overflow: hidden;
-    box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
-}
-
-.video-wrapper video {
-    display: block;
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: center;
-    transform: scaleX(-1);
-}
-
-/* ── Sidebar Controls ────────────────────────────────────────────────── */
-
-.sidebar-controls {
-    display: flex;
-    flex-direction: column;
-    gap: 14px;
-}
-
-.camera-options {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 12px;
-}
-
-.option-label,
-.timer-label {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-    min-width: 0;
-    font-size: 0.85rem;
-}
-
-select,
-input[type="number"] {
-    width: 100%;
-    min-width: 0;
-    padding: 9px 10px;
-    border: 1px solid var(--brass);
-    border-radius: 6px;
-    background: var(--paper);
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 0.9rem;
-}
-
-/* ── Strip Layout Picker ─────────────────────────────────────────────── */
-
-.strip-layout-section {
-    width: 100%;
-}
-
-.strip-layout-label {
-    margin-bottom: 8px;
-}
-
-.strip-layout-picker {
-    display: grid;
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 10px;
-    width: 100%;
-}
-
-.strip-option {
-    min-width: 0;
-    min-height: 90px;
-    padding: 8px 6px;
-
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 6px;
-
-    background: var(--paper);
-    border: 1px solid var(--brass);
-    border-radius: 6px;
-
-    color: var(--ink);
-    font-family: inherit;
-    font-size: 0.85rem;
-    text-align: center;
-    cursor: pointer;
-}
-
-.strip-option.active {
-    background: var(--brass);
-    color: #fff;
-}
-
-.strip-option:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* ── Capture Controls ────────────────────────────────────────────────── */
-
-.controls {
-    display: grid;
-    grid-template-columns: minmax(90px, 120px) minmax(0, 1fr);
-    gap: 10px;
-    align-items: end;
-}
-
-.btn {
-    border: none;
-    padding: 10px 14px;
-    border-radius: 6px;
-    background: var(--brass);
-    color: #fff;
-    font-family: inherit;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.btn:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-.btn-secondary {
-    width: 100%;
-    min-height: 38px;
-    background: var(--rust);
-}
-
-.btn-small {
-    padding: 6px 10px;
-    font-size: 0.75rem;
-}
-
-/* ── Session Gallery ────────────────────────────────────────────────── */
-
-.gallery-section {
-    height: 360px;
-    min-height: 260px;
-    display: flex;
-    flex-direction: column;
-}
-
-.section-header {
-    width: 100%;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 10px;
-}
-
-.section-header h3 {
-    font-size: 1.05rem;
-}
-
-.gallery-scroll-area {
-    flex: 1;
-    min-height: 0;
-    width: 100%;
-    margin-top: 10px;
-    padding: 4px;
-    overflow-y: auto;
-    overflow-x: hidden;
-}
-
-#gallery {
-    width: 100%;
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: flex-start;
-    align-items: flex-start;
-    gap: 16px;
-    padding: 6px 4px 12px;
-}
-
-.photo-item {
-    position: relative;
-    flex: 0 0 135px;
-    width: 135px;
-    min-width: 0;
-    padding: 10px 10px 30px;
-
-    background: var(--paper);
-    border: 1px solid var(--line);
-    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-    transform: rotate(var(--tilt));
-    transition: transform 0.2s ease;
-}
-
-.photo-item:hover {
-    transform: rotate(0deg) scale(1.02);
-    z-index: 10;
-}
-
-.photo-item img {
-    display: block;
-    width: 100%;
-    height: auto;
-    cursor: pointer;
-}
-
-.photo-checkbox {
-    position: absolute;
-    top: 6px;
-    left: 6px;
-    cursor: pointer;
-}
-
-.delete-btn {
-    position: absolute;
-    top: 6px;
-    right: 6px;
-
-    width: 20px;
-    height: 20px;
-
-    display: flex;
-    align-items: center;
-    justify-content: center;
-
-    border: none;
-    border-radius: 50%;
-    background: var(--rust);
-    color: #fff;
-    font-size: 10px;
-    cursor: pointer;
-}
-
-.download-btn {
-    width: 100%;
-    margin-top: 8px;
-    padding: 5px;
-
-    border: none;
-    border-radius: 4px;
-    background: var(--brass);
-    color: #fff;
-
-    font-family: inherit;
-    font-size: 0.8rem;
-    cursor: pointer;
-}
-
-.empty-message {
-    width: 100%;
-    padding: 30px 10px;
-    color: var(--ink-soft);
-    text-align: center;
-}
-
-.batch-save-btn {
-    flex-shrink: 0;
-    width: 100%;
-    margin-top: 10px;
-    padding: 9px;
-
-    border: none;
-    border-radius: 6px;
-    background: var(--brass);
-    color: #fff;
-
-    font-family: inherit;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.batch-save-btn.hidden,
-.hidden {
-    display: none !important;
-}
-
-/* ── Header ──────────────────────────────────────────────────────────── */
+/* ── HEADER ──────────────────────────────────── */
 
 .app-header {
     position: relative;
@@ -453,17 +142,385 @@ h1 {
     top: 50%;
     right: 0;
     transform: translateY(-50%);
-
     padding: 8px 12px;
     border: 1px solid var(--brass);
     border-radius: 6px;
-
     background: var(--surface);
     color: var(--ink);
     cursor: pointer;
 }
 
-/* ── Flash Effect ────────────────────────────────────────────────────── */
+/* ── MAIN TWO-COLUMN LAYOUT ───────────────────── */
+
+.workspace-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 22px;
+    width: 100%;
+    align-items: stretch;
+}
+
+.left-column,
+.right-column {
+    width: 100%;
+    min-width: 0;
+}
+
+.left-column {
+    display: flex;
+    align-items: flex-start;
+}
+
+.right-column {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ── SHARED PANELS ───────────────────────────── */
+
+.camera-section,
+.sidebar-controls,
+.gallery-section {
+    width: 100%;
+    min-width: 0;
+    background: var(--surface);
+    border: 2px solid var(--brass);
+    border-radius: 12px;
+    padding: 16px;
+    box-shadow: 0 8px 24px var(--shadow);
+}
+
+/* ── CAMERA ──────────────────────────────────── */
+
+.camera-section {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.camera-frame {
+    width: 100%;
+    min-width: 0;
+}
+
+.video-wrapper {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 4 / 3;
+    background: #000;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: inset 0 0 12px rgba(0,0,0,0.5);
+}
+
+.video-wrapper video {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
+    transform: scaleX(-1);
+}
+
+/* ── SETTINGS ────────────────────────────────── */
+
+.sidebar-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+}
+
+.camera-options {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+}
+
+.option-label,
+.timer-label {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 0;
+    font-size: 0.85rem;
+}
+
+select,
+input[type="number"] {
+    width: 100%;
+    min-width: 0;
+    padding: 9px 10px;
+    border: 1px solid var(--brass);
+    border-radius: 6px;
+    background: var(--paper);
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.9rem;
+}
+
+/* ── STRIP LAYOUT PICKER ──────────────────────── */
+
+.strip-layout-section {
+    width: 100%;
+}
+
+.strip-layout-label {
+    margin-bottom: 8px;
+    font-size: 0.9rem;
+}
+
+.strip-layout-picker {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 10px;
+    width: 100%;
+}
+
+.strip-option {
+    min-width: 0;
+    min-height: 90px;
+    padding: 8px 6px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: var(--paper);
+    border: 1px solid var(--brass);
+    border-radius: 6px;
+    color: var(--ink);
+    font-family: inherit;
+    font-size: 0.85rem;
+    text-align: center;
+    cursor: pointer;
+}
+
+.strip-option.active {
+    background: var(--brass);
+    color: #fff;
+}
+
+.strip-option:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Small layout illustrations */
+
+.strip-preview {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    height: 48px;
+}
+
+.strip-preview i {
+    display: block;
+    width: 15px;
+    height: 12px;
+    background: var(--brass-light);
+    border: 1px solid var(--ink-soft);
+}
+
+.sp-vertical-4 {
+    flex-direction: column;
+}
+
+.sp-vertical-4 i {
+    width: 22px;
+    height: 9px;
+}
+
+.sp-polaroid-1 {
+    width: 34px;
+    height: 42px;
+    flex-direction: column;
+    gap: 2px;
+    padding: 4px 3px 7px;
+    background: var(--paper-2);
+    border: 1px solid var(--ink-soft);
+}
+
+.sp-polaroid-1 i {
+    width: 100%;
+    height: 100%;
+}
+
+.sp-brick-4 {
+    display: grid;
+    grid-template-columns: repeat(2, 15px);
+    grid-template-rows: repeat(2, 12px);
+}
+
+/* ── CAPTURE CONTROLS ────────────────────────── */
+
+.controls {
+    display: grid;
+    grid-template-columns: minmax(90px, 120px) minmax(0, 1fr);
+    gap: 10px;
+    align-items: end;
+}
+
+.btn {
+    border: none;
+    padding: 10px 14px;
+    border-radius: 6px;
+    background: var(--brass);
+    color: #fff;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-secondary {
+    width: 100%;
+    min-height: 38px;
+    background: var(--rust);
+}
+
+/* ── SESSION GALLERY ─────────────────────────── */
+
+.gallery-section {
+    flex: 1;
+    min-height: 300px;
+    height: 360px;
+    display: flex;
+    flex-direction: column;
+}
+
+.section-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-header h3 {
+    font-size: 1.05rem;
+}
+
+.btn-small {
+    padding: 6px 10px;
+    font-size: 0.75rem;
+}
+
+.gallery-scroll-area {
+    flex: 1;
+    min-height: 0;
+    width: 100%;
+    margin-top: 10px;
+    padding: 4px;
+    overflow-y: auto;
+    overflow-x: hidden;
+}
+
+#gallery {
+    width: 100%;
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 6px 4px 12px;
+}
+
+.photo-item {
+    position: relative;
+    flex: 0 0 135px;
+    width: 135px;
+    min-width: 0;
+    padding: 10px 10px 30px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    transform: rotate(var(--tilt));
+    transition: transform 0.2s ease;
+}
+
+.photo-item:hover {
+    transform: rotate(0deg) scale(1.02);
+    z-index: 10;
+}
+
+.photo-item img {
+    display: block;
+    width: 100%;
+    height: auto;
+    cursor: pointer;
+}
+
+.photo-checkbox {
+    position: absolute;
+    top: 6px;
+    left: 6px;
+    cursor: pointer;
+}
+
+.delete-btn {
+    position: absolute;
+    top: 6px;
+    right: 6px;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 50%;
+    background: var(--rust);
+    color: #fff;
+    font-size: 10px;
+    cursor: pointer;
+}
+
+.download-btn {
+    width: 100%;
+    margin-top: 8px;
+    padding: 5px;
+    border: none;
+    border-radius: 4px;
+    background: var(--brass);
+    color: #fff;
+    font-family: inherit;
+    font-size: 0.8rem;
+    cursor: pointer;
+}
+
+.empty-message {
+    width: 100%;
+    padding: 30px 10px;
+    color: var(--ink-soft);
+    text-align: center;
+}
+
+.batch-save-btn {
+    flex-shrink: 0;
+    width: 100%;
+    margin-top: 10px;
+    padding: 9px;
+    border: none;
+    border-radius: 6px;
+    background: var(--brass);
+    color: #fff;
+    font-family: inherit;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.batch-save-btn.hidden,
+.hidden {
+    display: none !important;
+}
+
+/* ── FLASH EFFECT ────────────────────────────── */
 
 #flash-overlay {
     position: fixed;
@@ -479,17 +536,15 @@ h1 {
     opacity: 1;
 }
 
-/* ── Image Preview Modal ─────────────────────────────────────────────── */
+/* ── IMAGE PREVIEW MODAL ─────────────────────── */
 
 #image-preview-modal {
     position: fixed;
     inset: 0;
     z-index: 10000;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     padding: 12px;
 }
 
@@ -510,11 +565,9 @@ h1 {
     max-width: 96vw;
     max-height: 92dvh;
     padding: 48px 12px 16px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     border-radius: 16px;
     background: rgba(246, 240, 227, 0.96);
     box-shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
@@ -526,7 +579,6 @@ h1 {
     left: 50%;
     z-index: 2;
     transform: translateX(-50%);
-
     display: flex;
     gap: 6px;
 }
@@ -535,7 +587,6 @@ h1 {
     padding: 5px 9px;
     border: 1px solid rgba(59, 47, 34, 0.2);
     border-radius: 999px;
-
     background: rgba(255, 255, 255, 0.86);
     color: var(--ink);
     font: inherit;
@@ -547,13 +598,10 @@ h1 {
     top: 8px;
     right: 8px;
     z-index: 2;
-
     width: 34px;
     height: 34px;
-
     border: 1px solid rgba(59, 47, 34, 0.15);
     border-radius: 50%;
-
     background: rgba(255, 255, 255, 0.88);
     color: var(--ink);
     font-size: 1.2rem;
@@ -564,11 +612,9 @@ h1 {
     max-width: 100%;
     max-height: 78dvh;
     padding: 6px;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     border: 1px solid rgba(59, 47, 34, 0.14);
     border-radius: 12px;
     background: rgba(255, 255, 255, 0.75);
@@ -581,7 +627,6 @@ h1 {
     max-height: 76dvh;
     width: auto;
     height: auto;
-
     border-radius: 8px;
     object-fit: contain;
     transform-origin: center center;
@@ -590,16 +635,14 @@ h1 {
     user-select: none;
 }
 
-/* ── Countdown ──────────────────────────────────────────────────────── */
+/* ── COUNTDOWN ───────────────────────────────── */
 
 .countdown-overlay {
     position: absolute;
     inset: 0;
-
     display: flex;
     align-items: center;
     justify-content: center;
-
     background: rgba(0,0,0,0.4);
     color: #fff;
     font-size: clamp(3rem, 10vw, 5rem);
@@ -610,7 +653,7 @@ h1 {
     display: none;
 }
 
-/* ── Fullscreen ─────────────────────────────────────────────────────── */
+/* ── FULLSCREEN ──────────────────────────────── */
 
 #app-container:fullscreen {
     width: 100%;
@@ -628,6 +671,14 @@ h1 {
         linear-gradient(180deg, var(--bg), var(--bg-2));
 }
 
+#app-container:fullscreen .container {
+    max-width: none;
+}
+
+#app-container:fullscreen .workspace-grid {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+}
+
 body.app-fullscreen {
     position: fixed;
     inset: 0;
@@ -641,15 +692,15 @@ body.app-fullscreen {
 
 body.app-fullscreen #app-container {
     width: 100%;
-    max-width: 1000px;
+    max-width: 1400px;
     min-height: 100%;
     margin: 0 auto;
-    padding: 16px;
+    padding: 20px;
 }
 
-/* ── Tablet ──────────────────────────────────────────────────────────── */
+/* ── TABLET AND SMALL SCREENS ─────────────────── */
 
-@media (max-width: 768px) {
+@media (max-width: 800px) {
     body {
         padding: 14px;
     }
@@ -658,22 +709,41 @@ body.app-fullscreen #app-container {
         max-width: 100%;
     }
 
+    .workspace-grid {
+        grid-template-columns: 1fr;
+        gap: 14px;
+    }
+
+    .left-column,
+    .right-column {
+        width: 100%;
+    }
+
     .camera-section,
     .sidebar-controls,
     .gallery-section {
         padding: 12px;
     }
 
-    .gallery-section {
-        height: 330px;
+    .camera-section {
+        width: 100%;
     }
 
-    .workspace-grid {
-        gap: 14px;
+    .video-wrapper {
+        aspect-ratio: 4 / 3;
+    }
+
+    .gallery-section {
+        height: 330px;
+        min-height: 280px;
+    }
+
+    #app-container:fullscreen .workspace-grid {
+        grid-template-columns: 1fr;
     }
 }
 
-/* ── Mobile ──────────────────────────────────────────────────────────── */
+/* ── MOBILE ──────────────────────────────────── */
 
 @media (max-width: 480px) {
     body {
@@ -713,10 +783,6 @@ body.app-fullscreen #app-container {
     .gallery-section {
         padding: 10px;
         border-radius: 9px;
-    }
-
-    .video-wrapper {
-        aspect-ratio: 4 / 3;
     }
 
     .camera-options {
@@ -776,9 +842,13 @@ body.app-fullscreen #app-container {
     .preview-image-frame {
         max-height: 76dvh;
     }
+
+    body.app-fullscreen #app-container {
+        padding: 10px;
+    }
 }
 
-/* ── Short Landscape Screens ─────────────────────────────────────────── */
+/* ── SHORT LANDSCAPE SCREENS ──────────────────── */
 
 @media (orientation: landscape) and (max-height: 600px) {
     body {

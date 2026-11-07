@@ -19,12 +19,12 @@
 
         <div class="preview-dialog" role="dialog" aria-modal="true" aria-label="Image preview">
             <div class="preview-toolbar">
-                <button id="zoom-out-btn" class="preview-tool" type="button" aria-label="Zoom out">−</button>
-                <button id="zoom-reset-btn" class="preview-tool" type="button" aria-label="Reset zoom">100%</button>
-                <button id="zoom-in-btn" class="preview-tool" type="button" aria-label="Zoom in">+</button>
+                <button id="zoom-out-btn" class="preview-tool" type="button">−</button>
+                <button id="zoom-reset-btn" class="preview-tool" type="button">100%</button>
+                <button id="zoom-in-btn" class="preview-tool" type="button">+</button>
             </div>
 
-            <button id="close-preview-btn" class="preview-close" type="button" aria-label="Close preview">×</button>
+            <button id="close-preview-btn" class="preview-close" type="button">×</button>
 
             <div class="preview-image-frame">
                 <img id="preview-image" alt="Preview">
@@ -55,109 +55,116 @@
 
         <main class="workspace-grid">
 
-            <!-- Camera -->
-            <section class="camera-section">
-                <div class="camera-frame">
-                    <div class="video-wrapper">
-                        <video id="video" autoplay muted playsinline></video>
+            <!-- LEFT: CAMERA -->
+            <div class="left-column">
+                <section class="camera-section">
+                    <div class="camera-frame">
+                        <div class="video-wrapper">
+                            <video id="video" autoplay muted playsinline></video>
 
-                        <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="polite">
-                            <span id="countdown-number"></span>
+                            <div id="countdown-overlay" class="countdown-overlay hidden" aria-live="polite">
+                                <span id="countdown-number"></span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </section>
+                </section>
+            </div>
 
-            <!-- Settings -->
-            <section class="sidebar-controls">
+            <!-- RIGHT: SETTINGS AND GALLERY -->
+            <div class="right-column">
 
-                <div class="camera-options">
-                    <label class="option-label">
-                        Camera
-                        <select id="camera-select">
-                            <option value="">Loading cameras...</option>
-                        </select>
-                    </label>
+                <section class="sidebar-controls">
 
-                    <label class="option-label">
-                        Film Filter
-                        <select id="filter-select">
-                            <option value="none">Original</option>
-                            <option value="grayscale">Black &amp; White</option>
-                            <option value="sepia">Sepia</option>
-                            <option value="noir">Noir</option>
-                            <option value="vintage" selected>Vintage</option>
-                            <option value="vivid">Vivid</option>
-                            <option value="cool">Cool Tone</option>
-                            <option value="warm">Warm Tone</option>
-                            <option value="dreamy">Dreamy</option>
-                        </select>
-                    </label>
-                </div>
+                    <div class="camera-options">
+                        <label class="option-label">
+                            Camera
+                            <select id="camera-select">
+                                <option value="">Loading cameras...</option>
+                            </select>
+                        </label>
 
-                <div class="strip-layout-section">
-                    <p class="strip-layout-label">Photo Strip Layout</p>
-
-                    <div id="strip-layout-picker" class="strip-layout-picker">
-
-                        <button type="button" class="strip-option active" data-layout="vertical-4" title="4 photos stacked vertically">
-                            <span class="strip-preview sp-vertical-4">
-                                <i></i><i></i><i></i><i></i>
-                            </span>
-                            <span>Classic 4</span>
-                        </button>
-
-                        <button type="button" class="strip-option" data-layout="polaroid-1" title="Single photo with a Polaroid-style frame">
-                            <span class="strip-preview sp-polaroid-1">
-                                <i></i><i></i>
-                            </span>
-                            <span>Polaroid</span>
-                        </button>
-
-                        <button type="button" class="strip-option" data-layout="brick-4" title="4 photos in a toy-brick frame">
-                            <span class="strip-preview sp-brick-4">
-                                <i></i><i></i><i></i><i></i>
-                            </span>
-                            <span>Brick 4</span>
-                        </button>
-
+                        <label class="option-label">
+                            Film Filter
+                            <select id="filter-select">
+                                <option value="none">Original</option>
+                                <option value="grayscale">Black &amp; White</option>
+                                <option value="sepia">Sepia</option>
+                                <option value="noir">Noir</option>
+                                <option value="vintage" selected>Vintage</option>
+                                <option value="vivid">Vivid</option>
+                                <option value="cool">Cool Tone</option>
+                                <option value="warm">Warm Tone</option>
+                                <option value="dreamy">Dreamy</option>
+                            </select>
+                        </label>
                     </div>
-                </div>
 
-                <div class="controls">
-                    <label class="timer-label">
-                        Timer (sec)
-                        <input type="number" id="timer" min="0" max="60" value="3" placeholder="0">
-                    </label>
+                    <div class="strip-layout-section">
+                        <p class="strip-layout-label">Photo Strip Layout</p>
 
-                    <button id="strip-btn" class="btn btn-secondary" type="button">
-                        🎞️ Start Strip
+                        <div id="strip-layout-picker" class="strip-layout-picker">
+
+                            <button type="button" class="strip-option active" data-layout="vertical-4" title="4 photos stacked vertically">
+                                <span class="strip-preview sp-vertical-4">
+                                    <i></i><i></i><i></i><i></i>
+                                </span>
+                                <span>Classic 4</span>
+                            </button>
+
+                            <button type="button" class="strip-option" data-layout="polaroid-1" title="Single photo with a Polaroid-style frame">
+                                <span class="strip-preview sp-polaroid-1">
+                                    <i></i><i></i>
+                                </span>
+                                <span>Polaroid</span>
+                            </button>
+
+                            <button type="button" class="strip-option" data-layout="brick-4" title="4 photos in a toy-brick frame">
+                                <span class="strip-preview sp-brick-4">
+                                    <i></i><i></i><i></i><i></i>
+                                </span>
+                                <span>Brick 4</span>
+                            </button>
+
+                        </div>
+                    </div>
+
+                    <div class="controls">
+                        <label class="timer-label">
+                            Timer (sec)
+                            <input type="number" id="timer" min="0" max="60" value="3">
+                        </label>
+
+                        <button id="strip-btn" class="btn btn-secondary" type="button">
+                            🎞️ Start Strip
+                        </button>
+                    </div>
+
+                </section>
+
+                <!-- SESSION GALLERY -->
+                <section class="gallery-section">
+
+                    <div class="section-header">
+                        <h3>Session Gallery</h3>
+                        <button id="select-all-btn" class="btn btn-small" type="button">
+                            Select All
+                        </button>
+                    </div>
+
+                    <div class="gallery-scroll-area">
+                        <p id="session-empty" class="empty-message">
+                            Your photos will appear here.
+                        </p>
+
+                        <div id="gallery"></div>
+                    </div>
+
+                    <button id="batch-save-btn" class="batch-save-btn hidden" type="button">
+                        💾 Download Selected Images
                     </button>
-                </div>
 
-            </section>
-
-            <!-- Session Gallery -->
-            <section class="gallery-section">
-
-                <div class="section-header">
-                    <h3>Session Gallery</h3>
-                    <button id="select-all-btn" class="btn btn-small" type="button">Select All</button>
-                </div>
-
-                <div class="gallery-scroll-area">
-                    <p id="session-empty" class="empty-message">
-                        Your photos will appear here.
-                    </p>
-
-                    <div id="gallery"></div>
-                </div>
-
-                <button id="batch-save-btn" class="batch-save-btn hidden" type="button">
-                    💾 Download Selected Images
-                </button>
-
-            </section>
+                </section>
+            </div>
 
         </main>
     </div>
