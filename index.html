@@ -9,7 +9,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Special+Elite&family=Caveat:wght@600&family=Fredoka:wght@700&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css?v=4">
 </head>
 <body>
     <div id="flash-overlay" aria-hidden="true"></div>
@@ -28,6 +28,27 @@
 
             <div class="preview-image-frame">
                 <img id="preview-image" alt="Preview">
+            </div>
+        </div>
+    </div>
+
+    <!-- Manual photo-spot editor -->
+    <div id="spot-editor" class="spot-editor hidden" aria-hidden="true">
+        <div class="spot-dialog" role="dialog" aria-modal="true" aria-label="Mark photo spots">
+            <p class="spot-title">Mark where the photos go</p>
+            <p id="spot-message" class="hint"></p>
+            <p class="hint">Drag on the template to draw a photo spot. Tap a spot to delete it. Numbers show the photo order.</p>
+
+            <div class="spot-canvas-wrap">
+                <canvas id="spot-canvas"></canvas>
+            </div>
+
+            <p id="spot-count" class="hint"></p>
+
+            <div class="spot-actions">
+                <button id="spot-clear" class="btn btn-small btn-ghost" type="button">Clear</button>
+                <button id="spot-cancel" class="btn btn-small btn-ghost" type="button">Cancel</button>
+                <button id="spot-done" class="btn btn-small" type="button">Use these spots</button>
             </div>
         </div>
     </div>
@@ -127,11 +148,11 @@
                             </div>
 
                             <div id="custom-template-panel" class="option-panel hidden">
-                                <input type="file" id="template-file" accept="image/png,image/webp" hidden>
+                                <input type="file" id="template-file" accept="image/png,image/webp,image/jpeg" hidden>
 
                                 <div id="template-drop" class="template-drop">
                                     <button id="template-upload-btn" class="btn btn-small" type="button">⬆ Upload template</button>
-                                    <span class="hint">or drop a PNG here</span>
+                                    <span class="hint">or drop an image here</span>
                                 </div>
 
                                 <div id="template-info" class="template-info hidden">
@@ -139,16 +160,20 @@
                                     <div class="template-meta">
                                         <strong id="template-name"></strong>
                                         <span id="template-slots"></span>
-                                        <button id="template-remove-btn" class="btn btn-small btn-ghost" type="button">Remove</button>
+                                        <div class="template-buttons">
+                                            <button id="template-adjust-btn" class="btn btn-small" type="button">✎ Adjust spots</button>
+                                            <button id="template-remove-btn" class="btn btn-small btn-ghost" type="button">Remove</button>
+                                        </div>
                                     </div>
                                 </div>
 
                                 <p id="template-error" class="template-error hidden" role="alert"></p>
 
                                 <p class="hint">
-                                    Use a regular photostrip PNG with the photo spots left empty
-                                    (transparent), like an unfilled Canva or Photoshop template.
-                                    Photos fill the spots in numbered order.
+                                    Upload a photostrip exported from Canva (the sample sky-and-hills
+                                    pictures get replaced automatically) or any PNG with empty,
+                                    see-through photo spots. Photos fill the spots in numbered order.
+                                    Spots not found? You can mark them yourself.
                                 </p>
                             </div>
                         </div>
@@ -195,7 +220,6 @@
         </main>
     </div>
 
-    <script src="custom-template.js"></script>
-    <script src="script.js"></script>
+    <script src="script.js?v=4"></script>
 </body>
 </html>

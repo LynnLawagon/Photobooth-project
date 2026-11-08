@@ -1,4 +1,498 @@
 // ═══════════════════════════════════════════════════════════════════════════
+// CUSTOM TEMPLATE ENGINE
+// ═══════════════════════════════════════════════════════════════════════════
+//
+// Finds the photo spots in a user's photostrip image and puts the camera shots
+// into them. Three ways a spot can be found:
+//
+//   "hole"        The spot is transparent (PNG with see-through windows).
+//                 Photos go underneath the template.
+//   "placeholder" The spot holds a sample picture, like the blue-sky-and-hills
+//                 image Canva bakes into exported templates. Only those
+//                 pixels are replaced, so stickers overlapping a frame stay.
+//   "manual"      The user marked the spots by hand. Photos go on top.
+
+const CustomTemplate = (function () {
+    const MAX_SIDE = 2400;            // longest side of the working/export size
+    const MAX_SLOTS = 8;
+    const MAX_FILE_BYTES = 25 * 1024 * 1024;
+    const ALPHA_HOLE = 128;
+
+    const C_SKY = 1, C_GREEN = 2, C_WHITE = 3;
+
+    function loadBlobImage(blob) {
+        return new Promise((resolve, reject) => {
+            const url = URL.createObjectURL(blob);
+            const img = new Image();
+
+            img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+
+            img.onerror = () => {
+                URL.revokeObjectURL(url);
+                reject(new Error("That file could not be read as an image."));
+            };
+
+            img.src = url;
+        });
+    }
+
+    function loadSrc(src) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = reject;
+            img.src = src;
+        });
+    }
+
+    // 4-connected components of every pixel where flag[i] is set.
+    function components(flag, w, h) {
+        const total = w * h;
+        const label = new Int32Array(total);
+        const stack = new Int32Array(total);
+        const comps = [];
+
+        for (let start = 0; start < total; start++) {
+            if (!flag[start] || label[start]) continue;
+
+            const id = comps.length + 1;
+            let sp = 0;
+
+            stack[sp++] = start;
+            label[start] = id;
+
+            let minX = w, minY = h, maxX = 0, maxY = 0, area = 0;
+
+            while (sp > 0) {
+                const p = stack[--sp];
+                const x = p % w;
+                const y = (p - x) / w;
+
+                area++;
+                if (x < minX) minX = x;
+                if (x > maxX) maxX = x;
+                if (y < minY) minY = y;
+                if (y > maxY) maxY = y;
+
+                if (x > 0 && flag[p - 1] && !label[p - 1]) { label[p - 1] = id; stack[sp++] = p - 1; }
+                if (x < w - 1 && flag[p + 1] && !label[p + 1]) { label[p + 1] = id; stack[sp++] = p + 1; }
+                if (y > 0 && flag[p - w] && !label[p - w]) { label[p - w] = id; stack[sp++] = p - w; }
+                if (y < h - 1 && flag[p + w] && !label[p + w]) { label[p + w] = id; stack[sp++] = p + w; }
+            }
+
+            comps.push({ id, area, minX, minY, maxX, maxY });
+        }
+
+        return { label, comps };
+    }
+
+    // Square dilate (grow = true) or erode (grow = false) inside a box.
+    function morph(mask, w, h, box, r, grow) {
+        const x0 = Math.max(0, box.minX - r), x1 = Math.min(w - 1, box.maxX + r);
+        const y0 = Math.max(0, box.minY - r), y1 = Math.min(h - 1, box.maxY + r);
+
+        const tmp = new Uint8Array(mask.length);
+        const out = mask.slice();
+
+        for (let y = y0; y <= y1; y++) {
+            for (let x = x0; x <= x1; x++) {
+                let hit = grow ? 0 : 1;
+
+                for (let k = -r; k <= r; k++) {
+                    const xx = x + k;
+                    const v = xx < 0 || xx >= w ? (grow ? 0 : 1) : mask[y * w + xx];
+
+                    if (grow && v) { hit = 1; break; }
+                    if (!grow && !v) { hit = 0; break; }
+                }
+
+                tmp[y * w + x] = hit;
+            }
+        }
+
+        for (let y = y0; y <= y1; y++) {
+            for (let x = x0; x <= x1; x++) {
+                let hit = grow ? 0 : 1;
+
+                for (let k = -r; k <= r; k++) {
+                    const yy = y + k;
+                    const v = yy < 0 || yy >= h ? (grow ? 0 : 1) : tmp[yy * w + x];
+
+                    if (grow && v) { hit = 1; break; }
+                    if (!grow && !v) { hit = 0; break; }
+                }
+
+                out[y * w + x] = hit;
+            }
+        }
+
+        return out;
+    }
+
+    function findHoles(alphaFlag, w, h) {
+        const { comps } = components(alphaFlag, w, h);
+        const total = w * h;
+        const found = [];
+
+        comps.forEach((c) => {
+            const bw = c.maxX - c.minX + 1;
+            const bh = c.maxY - c.minY + 1;
+            const fill = c.area / (bw * bh);
+
+            if (c.area / total < 0.008) return;
+            if (fill < 0.7) return;
+
+            const touchesEdge =
+                c.minX === 0 || c.minY === 0 || c.maxX === w - 1 || c.maxY === h - 1;
+
+            if (touchesEdge && fill < 0.9) return;
+            if (bw >= w * 0.98 && bh >= h * 0.98) return;
+
+            const bleed = 2;
+
+            found.push({
+                x: Math.max(0, c.minX - bleed),
+                y: Math.max(0, c.minY - bleed),
+                w: Math.min(w, c.maxX + 1 + bleed) - Math.max(0, c.minX - bleed),
+                h: Math.min(h, c.maxY + 1 + bleed) - Math.max(0, c.minY - bleed)
+            });
+        });
+
+        return found;
+    }
+
+    // Looks for the sample picture (light blue sky + green hills) in each frame.
+    function findPlaceholders(cls, w, h) {
+        const total = w * h;
+        const core = new Uint8Array(total);
+
+        for (let i = 0; i < total; i++) {
+            core[i] = cls[i] === C_SKY || cls[i] === C_GREEN ? 1 : 0;
+        }
+
+        const { label, comps } = components(core, w, h);
+
+        const sky = new Int32Array(comps.length + 1);
+        const green = new Int32Array(comps.length + 1);
+
+        for (let i = 0; i < total; i++) {
+            if (!label[i]) continue;
+            if (cls[i] === C_SKY) sky[label[i]]++; else green[label[i]]++;
+        }
+
+        const keep = comps.filter((c) => {
+            const bw = c.maxX - c.minX + 1;
+            const bh = c.maxY - c.minY + 1;
+
+            return (
+                c.area / total >= 0.004 &&
+                bw >= w * 0.08 && bh >= h * 0.04 &&
+                c.area / (bw * bh) >= 0.5 &&
+                sky[c.id] / c.area >= 0.15 &&
+                green[c.id] / c.area >= 0.06
+            );
+        });
+
+        if (!keep.length) return null;
+
+        const mask = new Uint8Array(total);
+
+        keep.forEach((c) => {
+            for (let y = c.minY; y <= c.maxY; y++) {
+                for (let x = c.minX; x <= c.maxX; x++) {
+                    const i = y * w + x;
+                    if (cls[i]) mask[i] = 1;   // sky, green, or neutral white (clouds)
+                }
+            }
+        });
+
+        // Close tiny specks (film grain, anti-aliasing) and cover the edge fringe.
+        let closed = mask;
+
+        keep.forEach((c) => {
+            closed = morph(closed, w, h, c, 3, true);
+            closed = morph(closed, w, h, c, 2, false);
+        });
+
+        const windows = keep.map((c) => ({
+            x: c.minX,
+            y: c.minY,
+            w: c.maxX - c.minX + 1,
+            h: c.maxY - c.minY + 1
+        }));
+
+        return { windows, mask: closed };
+    }
+
+    // Top to bottom, left to right within a row.
+    function sortReadingOrder(boxes) {
+        const sorted = boxes.slice().sort((a, b) => a.y - b.y);
+        const rows = [];
+
+        sorted.forEach((box) => {
+            const cy = box.y + box.h / 2;
+            const row = rows.find((r) => Math.abs(r.cy - cy) < r.h * 0.5);
+
+            if (row) row.items.push(box);
+            else rows.push({ cy, h: box.h, items: [box] });
+        });
+
+        return rows.flatMap((r) => r.items.sort((a, b) => a.x - b.x));
+    }
+
+    function maskToCanvas(mask, w, h) {
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+
+        const ctx = canvas.getContext("2d");
+        const data = ctx.createImageData(w, h);
+
+        for (let i = 0; i < mask.length; i++) {
+            if (mask[i]) {
+                data.data[i * 4 + 3] = 255;
+            }
+        }
+
+        ctx.putImageData(data, 0, 0);
+        return canvas;
+    }
+
+    // Builds a template from an image file. If no photo spots can be found
+    // automatically, `windows` comes back empty and kind is "manual", so the
+    // caller can let the user mark the spots by hand.
+    async function analyze(file) {
+        if (!file) throw new Error("No file selected.");
+
+        if (!/^image\/(png|webp|jpeg)$/i.test(file.type)) {
+            throw new Error("Please upload a PNG, WebP, or JPG image.");
+        }
+
+        if (file.size > MAX_FILE_BYTES) {
+            throw new Error("That file is too large (max 25 MB).");
+        }
+
+        const img = await loadBlobImage(file);
+
+        const k = Math.min(1, MAX_SIDE / Math.max(img.width, img.height));
+        const w = Math.round(img.width * k);
+        const h = Math.round(img.height * k);
+
+        const canvas = document.createElement("canvas");
+        canvas.width = w;
+        canvas.height = h;
+
+        const ctx = canvas.getContext("2d", { willReadFrequently: true });
+        ctx.drawImage(img, 0, 0, w, h);
+
+        const px = ctx.getImageData(0, 0, w, h).data;
+        const total = w * h;
+
+        const cls = new Uint8Array(total);
+        const clear = new Uint8Array(total);
+        let anyClear = false;
+
+        for (let i = 0; i < total; i++) {
+            const r = px[i * 4], g = px[i * 4 + 1], b = px[i * 4 + 2], a = px[i * 4 + 3];
+
+            if (a < ALPHA_HOLE) {
+                clear[i] = 1;
+                anyClear = true;
+                continue;
+            }
+
+            const mx = Math.max(r, g, b);
+            const mn = Math.min(r, g, b);
+
+            if (b >= r + 10 && b >= g && (r + g + b) / 3 > 150) {
+                cls[i] = C_SKY;
+            } else if (g >= r + 12 && g >= b + 40) {
+                cls[i] = C_GREEN;
+            } else if (mn >= 205 && mx - mn <= 14) {
+                cls[i] = C_WHITE;
+            }
+        }
+
+        const base = {
+            blob: file,
+            name: file.name || "template",
+            img,
+            width: w,
+            height: h,
+            kind: "manual",
+            windows: [],
+            mask: null
+        };
+
+        if (anyClear) {
+            const holes = findHoles(clear, w, h);
+
+            if (holes.length && holes.length <= MAX_SLOTS) {
+                return { ...base, kind: "hole", windows: sortReadingOrder(holes) };
+            }
+        }
+
+        const ph = findPlaceholders(cls, w, h);
+
+        if (ph && ph.windows.length <= MAX_SLOTS) {
+            return {
+                ...base,
+                kind: "placeholder",
+                windows: sortReadingOrder(ph.windows),
+                maskCanvas: maskToCanvas(ph.mask, w, h)
+            };
+        }
+
+        return base;
+    }
+
+    // Template from an image plus hand-marked spots (in template pixels).
+    async function fromManual(file, windows) {
+        const base = await analyze(file).catch(() => null);
+
+        if (!base) throw new Error("That file could not be read as an image.");
+
+        return {
+            blob: file,
+            name: base.name,
+            img: base.img,
+            width: base.width,
+            height: base.height,
+            kind: "manual",
+            windows: sortReadingOrder(windows),
+            mask: null
+        };
+    }
+
+    function drawCover(ctx, img, x, y, w, h) {
+        const targetAspect = w / h;
+        const srcAspect = img.width / img.height;
+
+        let sx = 0, sy = 0, sw = img.width, sh = img.height;
+
+        if (srcAspect > targetAspect) {
+            sw = img.height * targetAspect;
+            sx = (img.width - sw) / 2;
+        } else {
+            sh = img.width / targetAspect;
+            sy = (img.height - sh) / 2;
+        }
+
+        ctx.drawImage(img, sx, sy, sw, sh, x, y, w, h);
+    }
+
+    async function compose(imageDataArray, template) {
+        const photos = await Promise.all(imageDataArray.map(loadSrc));
+
+        const canvas = document.createElement("canvas");
+        canvas.width = template.width;
+        canvas.height = template.height;
+
+        const ctx = canvas.getContext("2d");
+
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        const fillWindows = (target) => {
+            template.windows.forEach((win, i) => {
+                const photo = photos[i % photos.length];
+                if (photo) drawCover(target, photo, win.x, win.y, win.w, win.h);
+            });
+        };
+
+        if (template.kind === "hole") {
+            // Photos underneath, template with see-through windows on top.
+            fillWindows(ctx);
+            ctx.drawImage(template.img, 0, 0, canvas.width, canvas.height);
+
+        } else if (template.kind === "placeholder") {
+            // Template first, then photos only where the sample picture was.
+            ctx.drawImage(template.img, 0, 0, canvas.width, canvas.height);
+
+            const layer = document.createElement("canvas");
+            layer.width = canvas.width;
+            layer.height = canvas.height;
+
+            const lctx = layer.getContext("2d");
+
+            fillWindows(lctx);
+            lctx.globalCompositeOperation = "destination-in";
+            lctx.drawImage(template.maskCanvas, 0, 0);
+
+            ctx.drawImage(layer, 0, 0);
+
+        } else {
+            // Hand-marked rectangles: photos on top of the template.
+            ctx.drawImage(template.img, 0, 0, canvas.width, canvas.height);
+            fillWindows(ctx);
+        }
+
+        return canvas.toDataURL("image/png");
+    }
+
+    function paintChecker(ctx, w, h) {
+        const tile = 8;
+
+        for (let y = 0; y < h; y += tile) {
+            for (let x = 0; x < w; x += tile) {
+                ctx.fillStyle = ((x + y) / tile) % 2 === 0 ? "#ffffff" : "#d9d2c2";
+                ctx.fillRect(x, y, tile, tile);
+            }
+        }
+    }
+
+    function paintSpots(ctx, windows, k, selectedIndex) {
+        windows.forEach((win, i) => {
+            const x = win.x * k, y = win.y * k, w = win.w * k, h = win.h * k;
+            const r = Math.max(9, Math.min(w, h) * 0.16);
+
+            ctx.fillStyle = "rgba(169, 121, 60, 0.30)";
+            ctx.fillRect(x, y, w, h);
+
+            ctx.strokeStyle = "#8a3a2e";
+            ctx.lineWidth = 2;
+            ctx.strokeRect(x + 1, y + 1, w - 2, h - 2);
+
+            ctx.beginPath();
+            ctx.arc(x + w / 2, y + h / 2, r, 0, Math.PI * 2);
+            ctx.fillStyle = "#8a3a2e";
+            ctx.fill();
+
+            ctx.fillStyle = "#fff";
+            ctx.font = `bold ${Math.round(r * 1.2)}px sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText(String(i + 1), x + w / 2, y + h / 2 + 1);
+        });
+    }
+
+    // Template with numbered photo spots on a checkerboard.
+    function renderPreview(template, canvas, maxSide) {
+        const k = Math.min(1, maxSide / Math.max(template.width, template.height));
+
+        canvas.width = Math.max(1, Math.round(template.width * k));
+        canvas.height = Math.max(1, Math.round(template.height * k));
+
+        const ctx = canvas.getContext("2d");
+
+        paintChecker(ctx, canvas.width, canvas.height);
+        ctx.drawImage(template.img, 0, 0, canvas.width, canvas.height);
+        paintSpots(ctx, template.windows, k);
+    }
+
+    return {
+        analyze,
+        fromManual,
+        compose,
+        renderPreview,
+        paintSpots,
+        paintChecker,
+        sortReadingOrder,
+        MAX_SLOTS
+    };
+})();
+
+// ═══════════════════════════════════════════════════════════════════════════
 // DOM ELEMENTS
 // ═══════════════════════════════════════════════════════════════════════════
 
@@ -37,6 +531,14 @@ const templatePreview = document.getElementById("template-preview");
 const templateName = document.getElementById("template-name");
 const templateSlots = document.getElementById("template-slots");
 const templateRemoveBtn = document.getElementById("template-remove-btn");
+const templateAdjustBtn = document.getElementById("template-adjust-btn");
+const spotEditor = document.getElementById("spot-editor");
+const spotCanvas = document.getElementById("spot-canvas");
+const spotMessage = document.getElementById("spot-message");
+const spotCount = document.getElementById("spot-count");
+const spotClearBtn = document.getElementById("spot-clear");
+const spotCancelBtn = document.getElementById("spot-cancel");
+const spotDoneBtn = document.getElementById("spot-done");
 const templateError = document.getElementById("template-error");
 
 let currentStream = null;
@@ -316,10 +818,10 @@ async function templateDbRun(mode, action) {
     }
 }
 
-async function saveTemplateFile(file) {
+async function saveTemplateFile(file, windows) {
     try {
         await templateDbRun("readwrite", (store) =>
-            store.put(file, TEMPLATE_KEY)
+            store.put({ file, windows: windows || null }, TEMPLATE_KEY)
         );
     } catch (error) {
         console.warn("Could not remember the template for next time.", error);
@@ -336,9 +838,14 @@ async function clearTemplateFile() {
 
 async function loadSavedTemplateFile() {
     try {
-        return await templateDbRun("readonly", (store) =>
+        const record = await templateDbRun("readonly", (store) =>
             store.get(TEMPLATE_KEY)
         );
+
+        if (!record) return null;
+
+        // Older versions stored the bare file.
+        return record.file ? record : { file: record, windows: null };
     } catch (error) {
         return null;
     }
@@ -419,18 +926,36 @@ function setClassicMode(mode) {
     saveSettings();
 }
 
-async function loadTemplateFile(file, { remember = true } = {}) {
+async function useTemplate(template) {
+    customTemplate = template;
+
+    await saveTemplateFile(
+        template.blob,
+        template.kind === "manual" ? template.windows : null
+    );
+
+    updateClassicPanel();
+}
+
+async function loadTemplateFile(file) {
     showTemplateError("");
 
     try {
         const analyzed = await CustomTemplate.analyze(file);
 
-        customTemplate = analyzed;
+        if (analyzed.windows.length) {
+            await useTemplate(analyzed);
+            return true;
+        }
 
-        if (remember) await saveTemplateFile(file);
+        // Nothing detected: let the user mark the photo spots.
+        openSpotEditor(
+            analyzed,
+            [],
+            "We couldn't find the photo spots automatically. Draw a box over each place a photo should go."
+        );
 
-        updateClassicPanel();
-        return true;
+        return false;
 
     } catch (error) {
         showTemplateError(error.message || "Could not use that template.");
@@ -448,19 +973,222 @@ async function removeTemplate() {
 }
 
 async function restoreTemplate() {
-    if (!window.CustomTemplate) return;
+    const record = await loadSavedTemplateFile();
 
-    const file = await loadSavedTemplateFile();
-
-    if (!file) return;
+    if (!record) return;
 
     try {
-        customTemplate = await CustomTemplate.analyze(file);
+        customTemplate = record.windows && record.windows.length
+            ? await CustomTemplate.fromManual(record.file, record.windows)
+            : await CustomTemplate.analyze(record.file);
+
+        if (!customTemplate.windows.length) {
+            customTemplate = null;
+            return;
+        }
+
         updateClassicPanel();
     } catch (error) {
         await clearTemplateFile();
     }
 }
+
+// ── Manual photo-spot editor ──────────────────────────────────────────────
+
+let editorBase = null;
+let editorWindows = [];
+let editorScale = 1;
+let editorDrag = null;
+
+function openSpotEditor(base, windows, message) {
+    editorBase = base;
+    editorWindows = windows.map((win) => ({ ...win }));
+    editorScale = Math.min(1, 1100 / base.height, 760 / base.width);
+
+    spotCanvas.width = Math.max(1, Math.round(base.width * editorScale));
+    spotCanvas.height = Math.max(1, Math.round(base.height * editorScale));
+
+    spotMessage.textContent = message || "";
+    spotMessage.classList.toggle("hidden", !message);
+
+    spotEditor.classList.remove("hidden");
+    spotEditor.setAttribute("aria-hidden", "false");
+
+    redrawSpotEditor();
+}
+
+function closeSpotEditor() {
+    spotEditor.classList.add("hidden");
+    spotEditor.setAttribute("aria-hidden", "true");
+
+    editorBase = null;
+    editorDrag = null;
+}
+
+function redrawSpotEditor() {
+    if (!editorBase) return;
+
+    const ctx = spotCanvas.getContext("2d");
+    const w = spotCanvas.width;
+    const h = spotCanvas.height;
+
+    CustomTemplate.paintChecker(ctx, w, h);
+    ctx.drawImage(editorBase.img, 0, 0, w, h);
+
+    const ordered = CustomTemplate.sortReadingOrder(editorWindows);
+
+    CustomTemplate.paintSpots(ctx, ordered, editorScale);
+
+    if (editorDrag) {
+        const r = dragRect(editorDrag);
+
+        ctx.fillStyle = "rgba(169, 121, 60, 0.35)";
+        ctx.fillRect(r.x * editorScale, r.y * editorScale, r.w * editorScale, r.h * editorScale);
+        ctx.strokeStyle = "#8a3a2e";
+        ctx.setLineDash([6, 4]);
+        ctx.strokeRect(r.x * editorScale, r.y * editorScale, r.w * editorScale, r.h * editorScale);
+        ctx.setLineDash([]);
+    }
+
+    const count = editorWindows.length;
+
+    spotCount.textContent = count
+        ? `${count} photo spot${count !== 1 ? "s" : ""} marked (max ${CustomTemplate.MAX_SLOTS})`
+        : "No photo spots marked yet.";
+}
+
+function dragRect(drag) {
+    const x = Math.min(drag.x0, drag.x1);
+    const y = Math.min(drag.y0, drag.y1);
+
+    return {
+        x,
+        y,
+        w: Math.abs(drag.x1 - drag.x0),
+        h: Math.abs(drag.y1 - drag.y0)
+    };
+}
+
+function spotPoint(event) {
+    const rect = spotCanvas.getBoundingClientRect();
+
+    const px = (event.clientX - rect.left) * (spotCanvas.width / rect.width);
+    const py = (event.clientY - rect.top) * (spotCanvas.height / rect.height);
+
+    return {
+        x: Math.max(0, Math.min(editorBase.width, px / editorScale)),
+        y: Math.max(0, Math.min(editorBase.height, py / editorScale))
+    };
+}
+
+spotCanvas.addEventListener("pointerdown", (event) => {
+    if (!editorBase) return;
+
+    event.preventDefault();
+    spotCanvas.setPointerCapture(event.pointerId);
+
+    const p = spotPoint(event);
+    editorDrag = { x0: p.x, y0: p.y, x1: p.x, y1: p.y };
+});
+
+spotCanvas.addEventListener("pointermove", (event) => {
+    if (!editorDrag) return;
+
+    const p = spotPoint(event);
+
+    editorDrag.x1 = p.x;
+    editorDrag.y1 = p.y;
+
+    redrawSpotEditor();
+});
+
+spotCanvas.addEventListener("pointerup", (event) => {
+    if (!editorDrag) return;
+
+    const p = spotPoint(event);
+
+    editorDrag.x1 = p.x;
+    editorDrag.y1 = p.y;
+
+    const r = dragRect(editorDrag);
+    const minSize = 14 / editorScale;
+
+    if (r.w < minSize && r.h < minSize) {
+        // A tap: delete the spot under the pointer.
+        const index = editorWindows.findIndex((win) =>
+            p.x >= win.x && p.x <= win.x + win.w &&
+            p.y >= win.y && p.y <= win.y + win.h
+        );
+
+        if (index >= 0) editorWindows.splice(index, 1);
+
+    } else if (r.w >= minSize && r.h >= minSize) {
+        if (editorWindows.length >= CustomTemplate.MAX_SLOTS) {
+            alert(`You can mark up to ${CustomTemplate.MAX_SLOTS} photo spots.`);
+        } else {
+            editorWindows.push({
+                x: Math.round(r.x),
+                y: Math.round(r.y),
+                w: Math.round(r.w),
+                h: Math.round(r.h)
+            });
+        }
+    }
+
+    editorDrag = null;
+    redrawSpotEditor();
+});
+
+spotCanvas.addEventListener("pointercancel", () => {
+    editorDrag = null;
+    redrawSpotEditor();
+});
+
+spotClearBtn.addEventListener("click", () => {
+    editorWindows = [];
+    redrawSpotEditor();
+});
+
+spotCancelBtn.addEventListener("click", () => {
+    if (!customTemplate) {
+        showTemplateError("No photo spots were set, so the template wasn't added.");
+    }
+
+    closeSpotEditor();
+});
+
+spotDoneBtn.addEventListener("click", async () => {
+    if (!editorWindows.length) {
+        alert("Draw at least one photo spot first.");
+        return;
+    }
+
+    try {
+        const template = await CustomTemplate.fromManual(
+            editorBase.blob,
+            editorWindows
+        );
+
+        closeSpotEditor();
+        showTemplateError("");
+        await useTemplate(template);
+
+    } catch (error) {
+        alert(error.message || "Could not use those spots.");
+    }
+});
+
+templateAdjustBtn.addEventListener("click", () => {
+    if (customTemplate) {
+        openSpotEditor(customTemplate, customTemplate.windows, "");
+    }
+});
+
+document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !spotEditor.classList.contains("hidden")) {
+        spotCancelBtn.click();
+    }
+});
 
 modeButtons.forEach((btn) => {
     btn.addEventListener("click", () => setClassicMode(btn.dataset.mode));

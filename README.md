@@ -49,9 +49,10 @@ Open http://localhost:3000 in your browser and allow camera access when prompted
 ### Use Your Own Template
 
 1. Under Photo Strip Style, choose **My Template**.
-2. Upload (or drag in) a PNG/WebP photostrip whose photo spots are empty, meaning transparent, like an unfilled Canva or Photoshop template.
-3. The app finds the spots automatically (1 to 8, in reading order) and shows them numbered. Each capture takes one photo per spot.
-4. Photos go underneath your template, so its frames, borders, and stickers stay on top. The template is remembered in your browser.
+2. Upload (or drag in) your photostrip image. Canva exports work as they are: the sample sky-and-hills pictures in the frames are replaced with your photos, and stickers that overlap a frame stay on top. PNGs with transparent photo spots work too.
+3. The app shows your template with the photo spots numbered (1 to 8). Each capture takes one photo per spot, in that order.
+4. If a spot is missed or wrong, click **Adjust spots** (or it opens automatically when nothing is found) and drag boxes over where the photos should go. Tap a box to delete it.
+5. The template is remembered in your browser.
 
 ### View and Save Photos
 
@@ -67,7 +68,6 @@ photobooth-project/
 ├── index.html       # Main UI and modal preview markup
 ├── style.css        # Styling for the app, gallery, and preview popup
 ├── script.js        # Camera, filters, strip creation, and gallery logic
-├── custom-template.js # Custom template spot detection and compositing
 ├── server.js        # Express static file server
 └── package.json
 `
