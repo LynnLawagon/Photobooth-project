@@ -8,7 +8,6 @@ const gallery = document.getElementById("gallery");
 const timerInput = document.getElementById("timer");
 const cameraSelect = document.getElementById("camera-select");
 const filterSelect = document.getElementById("filter-select");
-const stripLayoutPicker = document.getElementById("strip-layout-picker");
 const countdownOverlay = document.getElementById("countdown-overlay");
 const countdownNumber = document.getElementById("countdown-number");
 const flashOverlay = document.getElementById("flash-overlay");
@@ -24,15 +23,42 @@ const zoomOutBtn = document.getElementById("zoom-out-btn");
 const zoomResetBtn = document.getElementById("zoom-reset-btn");
 const appContainer = document.getElementById("app-container");
 
+const classicOptions = document.getElementById("classic-options");
+const classicBgPanel = document.getElementById("classic-bg-panel");
+const customTemplatePanel = document.getElementById("custom-template-panel");
+const modeButtons = classicOptions.querySelectorAll(".seg");
+const swatchButtons = classicOptions.querySelectorAll(".swatch");
+const bgColorInput = document.getElementById("bg-color");
+const templateFileInput = document.getElementById("template-file");
+const templateUploadBtn = document.getElementById("template-upload-btn");
+const templateDrop = document.getElementById("template-drop");
+const templateInfo = document.getElementById("template-info");
+const templatePreview = document.getElementById("template-preview");
+const templateName = document.getElementById("template-name");
+const templateSlots = document.getElementById("template-slots");
+const templateRemoveBtn = document.getElementById("template-remove-btn");
+const templateError = document.getElementById("template-error");
+
 let currentStream = null;
 let isCapturing = false;
-let selectedStripLayout = "vertical-4";
 let previewZoom = 1;
 let previewSource = null;
+
+// Classic 4 has two styles: the classic strip (with a choosable background
+// color) or the user's own uploaded template.
+const DEFAULT_CLASSIC_BG = "#f6f0e3";
+
+let classicMode = "classic";          // "classic" | "custom"
+let classicBg = DEFAULT_CLASSIC_BG;
+let customTemplate = null;            // result of CustomTemplate.analyze()
 
 // ═══════════════════════════════════════════════════════════════════════════
 // STORAGE
 // ═══════════════════════════════════════════════════════════════════════════
+
+const TEMPLATE_DB = "photobooth";
+const TEMPLATE_STORE = "kv";
+const TEMPLATE_KEY = "custom-template";
 
 const STORAGE_KEYS = {
     settings: "photobooth:settings:v1",
@@ -68,10 +94,11 @@ function storageSet(key, value) {
 
 function saveSettings() {
     storageSet(STORAGE_KEYS.settings, {
-        layout: selectedStripLayout,
         filter: filterSelect.value,
         timer: timerInput.value,
-        camera: cameraSelect.value || ""
+        camera: cameraSelect.value || "",
+        classicMode,
+        classicBg
     });
 }
 
@@ -97,15 +124,12 @@ function restoreSettings() {
         }
     }
 
-    if (saved.layout && STRIP_LAYOUTS[saved.layout]) {
-        selectedStripLayout = saved.layout;
+    if (saved.classicMode === "classic" || saved.classicMode === "custom") {
+        classicMode = saved.classicMode;
+    }
 
-        stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
-            btn.classList.toggle(
-                "active",
-                btn.dataset.layout === selectedStripLayout
-            );
-        });
+    if (isHexColor(saved.classicBg)) {
+        classicBg = saved.classicBg.toLowerCase();
     }
 }
 
@@ -237,35 +261,250 @@ function imageExtension(dataUrl) {
 // STRIP LAYOUTS
 // ═══════════════════════════════════════════════════════════════════════════
 
-const STRIP_LAYOUTS = {
-    "vertical-4": {
-        shots: 4,
-        cols: 1,
-        rows: 4,
-        label: "Classic 4"
-    },
+const CLASSIC_LAYOUT = {
+    shots: 4,
+    cols: 1,
+    rows: 4,
+    label: "Classic 4"
+};
 
-    "polaroid-1": {
-        shots: 1,
-        cols: 1,
-        rows: 1,
-        label: "Polaroid"
-    },
+// Camera preview aspect ratio for the classic strip.
+const CLASSIC_ASPECT = 4 / 3;
 
-    "brick-4": {
-        shots: 4,
-        cols: 1,
-        rows: 4,
-        label: "Brick 4"
+// ═══════════════════════════════════════════════════════════════════════════
+// CLASSIC 4 OPTIONS: BACKGROUND COLOR + CUSTOM TEMPLATE
+// ═══════════════════════════════════════════════════════════════════════════
+
+function isHexColor(value) {
+    return typeof value === "string" && /^#[0-9a-f]{6}$/i.test(value);
+}
+
+// The uploaded template file is kept in IndexedDB so it survives a reload
+// (it can be too big for localStorage).
+function openTemplateDb() {
+    return new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+            reject(new Error("IndexedDB unavailable"));
+            return;
+        }
+
+        const request = indexedDB.open(TEMPLATE_DB, 1);
+
+        request.onupgradeneeded = () => {
+            request.result.createObjectStore(TEMPLATE_STORE);
+        };
+
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error);
+    });
+}
+
+async function templateDbRun(mode, action) {
+    const db = await openTemplateDb();
+
+    try {
+        return await new Promise((resolve, reject) => {
+            const tx = db.transaction(TEMPLATE_STORE, mode);
+            const request = action(tx.objectStore(TEMPLATE_STORE));
+
+            tx.oncomplete = () => resolve(request?.result);
+            tx.onerror = () => reject(tx.error);
+            tx.onabort = () => reject(tx.error);
+        });
+    } finally {
+        db.close();
     }
-};
+}
 
-// All camera previews use the same landscape aspect ratio.
-const LAYOUT_ASPECT = {
-    "vertical-4": 4 / 3,
-    "polaroid-1": 4 / 3,
-    "brick-4": 4 / 3
-};
+async function saveTemplateFile(file) {
+    try {
+        await templateDbRun("readwrite", (store) =>
+            store.put(file, TEMPLATE_KEY)
+        );
+    } catch (error) {
+        console.warn("Could not remember the template for next time.", error);
+    }
+}
+
+async function clearTemplateFile() {
+    try {
+        await templateDbRun("readwrite", (store) =>
+            store.delete(TEMPLATE_KEY)
+        );
+    } catch (error) {}
+}
+
+async function loadSavedTemplateFile() {
+    try {
+        return await templateDbRun("readonly", (store) =>
+            store.get(TEMPLATE_KEY)
+        );
+    } catch (error) {
+        return null;
+    }
+}
+
+function showTemplateError(message) {
+    templateError.textContent = message || "";
+    templateError.classList.toggle("hidden", !message);
+}
+
+function usingCustomTemplate() {
+    return classicMode === "custom" && !!customTemplate;
+}
+
+function getActiveShots() {
+    return usingCustomTemplate()
+        ? customTemplate.windows.length
+        : CLASSIC_LAYOUT.shots;
+}
+
+function getActiveAspect() {
+    if (usingCustomTemplate()) {
+        const win = customTemplate.windows[0];
+        return win.w / win.h;
+    }
+
+    return CLASSIC_ASPECT;
+}
+
+function updateTemplateInfo() {
+    templateInfo.classList.toggle("hidden", !customTemplate);
+    templateDrop.classList.toggle("hidden", !!customTemplate);
+
+    if (!customTemplate) return;
+
+    CustomTemplate.renderPreview(customTemplate, templatePreview, 180);
+
+    const count = customTemplate.windows.length;
+
+    templateName.textContent = customTemplate.name;
+    templateName.title = customTemplate.name;
+    templateSlots.textContent =
+        `${count} photo spot${count !== 1 ? "s" : ""} found`;
+}
+
+function updateClassicPanel() {
+    modeButtons.forEach((btn) => {
+        btn.classList.toggle("active", btn.dataset.mode === classicMode);
+    });
+
+    classicBgPanel.classList.toggle("hidden", classicMode !== "classic");
+    customTemplatePanel.classList.toggle("hidden", classicMode !== "custom");
+
+    swatchButtons.forEach((btn) => {
+        btn.classList.toggle(
+            "active",
+            btn.dataset.color.toLowerCase() === classicBg
+        );
+    });
+
+    bgColorInput.value = classicBg;
+
+    updateTemplateInfo();
+    applyLayoutAspect();
+}
+
+function setClassicBg(color) {
+    if (!isHexColor(color)) return;
+
+    classicBg = color.toLowerCase();
+    updateClassicPanel();
+    saveSettings();
+}
+
+function setClassicMode(mode) {
+    classicMode = mode;
+    updateClassicPanel();
+    saveSettings();
+}
+
+async function loadTemplateFile(file, { remember = true } = {}) {
+    showTemplateError("");
+
+    try {
+        const analyzed = await CustomTemplate.analyze(file);
+
+        customTemplate = analyzed;
+
+        if (remember) await saveTemplateFile(file);
+
+        updateClassicPanel();
+        return true;
+
+    } catch (error) {
+        showTemplateError(error.message || "Could not use that template.");
+        return false;
+    }
+}
+
+async function removeTemplate() {
+    customTemplate = null;
+    showTemplateError("");
+    templateFileInput.value = "";
+
+    await clearTemplateFile();
+    updateClassicPanel();
+}
+
+async function restoreTemplate() {
+    if (!window.CustomTemplate) return;
+
+    const file = await loadSavedTemplateFile();
+
+    if (!file) return;
+
+    try {
+        customTemplate = await CustomTemplate.analyze(file);
+        updateClassicPanel();
+    } catch (error) {
+        await clearTemplateFile();
+    }
+}
+
+modeButtons.forEach((btn) => {
+    btn.addEventListener("click", () => setClassicMode(btn.dataset.mode));
+});
+
+swatchButtons.forEach((btn) => {
+    btn.addEventListener("click", () => setClassicBg(btn.dataset.color));
+});
+
+bgColorInput.addEventListener("input", () => setClassicBg(bgColorInput.value));
+
+templateUploadBtn.addEventListener("click", () => templateFileInput.click());
+
+templateFileInput.addEventListener("change", () => {
+    const file = templateFileInput.files?.[0];
+
+    if (file) loadTemplateFile(file);
+
+    templateFileInput.value = "";
+});
+
+templateRemoveBtn.addEventListener("click", removeTemplate);
+
+["dragenter", "dragover"].forEach((type) => {
+    customTemplatePanel.addEventListener(type, (event) => {
+        event.preventDefault();
+        templateDrop.classList.add("dragover");
+    });
+});
+
+["dragleave", "drop"].forEach((type) => {
+    customTemplatePanel.addEventListener(type, (event) => {
+        event.preventDefault();
+        templateDrop.classList.remove("dragover");
+    });
+});
+
+customTemplatePanel.addEventListener("drop", (event) => {
+    if (isCapturing) return;
+
+    const file = event.dataTransfer?.files?.[0];
+
+    if (file) loadTemplateFile(file);
+});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // FILTERS
@@ -427,33 +666,18 @@ filterSelect.addEventListener("change", () => {
 timerInput.addEventListener("change", saveSettings);
 
 // ═══════════════════════════════════════════════════════════════════════════
-// STRIP LAYOUT PICKER
+// PREVIEW ASPECT RATIO
 // ═══════════════════════════════════════════════════════════════════════════
 
-function applyLayoutAspect(layoutId) {
+function applyLayoutAspect() {
     const videoWrapper = document.querySelector(".video-wrapper");
 
     if (!videoWrapper) return;
 
-    const aspect = LAYOUT_ASPECT[layoutId] || (4 / 3);
+    const aspect = getActiveAspect();
 
     videoWrapper.style.aspectRatio = String(aspect);
 }
-
-stripLayoutPicker.addEventListener("click", (event) => {
-    const option = event.target.closest(".strip-option");
-
-    if (!option || !STRIP_LAYOUTS[option.dataset.layout]) return;
-
-    selectedStripLayout = option.dataset.layout;
-
-    stripLayoutPicker.querySelectorAll(".strip-option").forEach((btn) => {
-        btn.classList.toggle("active", btn === option);
-    });
-
-    applyLayoutAspect(selectedStripLayout);
-    saveSettings();
-});
 
 // ═══════════════════════════════════════════════════════════════════════════
 // AUDIO AND VISUAL EFFECTS
@@ -540,9 +764,11 @@ function setControlsDisabled(disabled) {
     cameraSelect.disabled = disabled;
     filterSelect.disabled = disabled;
 
-    stripLayoutPicker.querySelectorAll(".strip-option").forEach((button) => {
-        button.disabled = disabled;
-    });
+    classicOptions
+        .querySelectorAll("button, input")
+        .forEach((control) => {
+            control.disabled = disabled;
+        });
 
     isCapturing = disabled;
 }
@@ -625,7 +851,7 @@ function captureFrame() {
     }
 
     const targetAspect =
-        LAYOUT_ASPECT[selectedStripLayout] ||
+        getActiveAspect() ||
         (video.videoWidth / video.videoHeight);
 
     const { sx, sy, sw, sh } = getCoverCropRect(
@@ -699,24 +925,16 @@ function loadImages(imageDataArray) {
 // CREATE PHOTO STRIPS
 // ═══════════════════════════════════════════════════════════════════════════
 
-function createPhotoStrip(layoutId, imageDataArray) {
-    if (layoutId === "polaroid-1") {
-        return createPolaroidFrame(imageDataArray[0]);
-    }
-
-    if (layoutId === "brick-4") {
-        if (typeof window.createBrickStrip !== "function") {
-            throw new Error("Brick 4 template is unavailable.");
+function createPhotoStrip(imageDataArray) {
+    if (classicMode === "custom") {
+        if (!customTemplate) {
+            throw new Error("Upload a template first.");
         }
 
-        return window.createBrickStrip(imageDataArray);
+        return CustomTemplate.compose(imageDataArray, customTemplate);
     }
 
-    const layout = STRIP_LAYOUTS[layoutId];
-
-    if (!layout) {
-        throw new Error("Invalid strip layout.");
-    }
+    const layout = CLASSIC_LAYOUT;
 
     const gap = 12;
     const padding = 24;
@@ -755,7 +973,7 @@ function createPhotoStrip(layoutId, imageDataArray) {
 
         const ctx = canvas.getContext("2d");
 
-        ctx.fillStyle = "#f6f0e3";
+        ctx.fillStyle = classicBg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         loaded.forEach((img, index) => {
@@ -767,27 +985,6 @@ function createPhotoStrip(layoutId, imageDataArray) {
 
             ctx.drawImage(img, x, y, cellW, cellH);
         });
-
-        return canvas.toDataURL("image/png");
-    });
-}
-
-function createPolaroidFrame(imageData) {
-    return loadImages([imageData]).then(([img]) => {
-        const side = Math.round(img.width * 0.05);
-        const bottom = Math.round(img.width * 0.2);
-
-        const canvas = document.createElement("canvas");
-
-        canvas.width = img.width + side * 2;
-        canvas.height = img.height + side + bottom;
-
-        const ctx = canvas.getContext("2d");
-
-        ctx.fillStyle = "#f8f2e4";
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        ctx.drawImage(img, side, side, img.width, img.height);
 
         return canvas.toDataURL("image/png");
     });
@@ -1032,20 +1229,18 @@ function addPhotoToGallery(imageData, label) {
 // ═══════════════════════════════════════════════════════════════════════════
 
 function saveCapturedStrip(stripDataUrl) {
-    const layout = STRIP_LAYOUTS[selectedStripLayout];
+    const label =
+        classicMode === "custom"
+            ? "Custom template strip"
+            : `${CLASSIC_LAYOUT.label} strip`;
 
     // Save directly to the gallery. No sticker editor.
-    addPhotoToGallery(
-        stripDataUrl,
-        `${layout.label} strip`
-    );
+    addPhotoToGallery(stripDataUrl, label);
 }
 
 async function capturePhotoStrip() {
-    const layout = STRIP_LAYOUTS[selectedStripLayout];
-
-    if (!layout) {
-        alert("Please select a valid photo layout.");
+    if (classicMode === "custom" && !customTemplate) {
+        showTemplateError("Upload a template first, or switch back to Classic.");
         return;
     }
 
@@ -1053,6 +1248,8 @@ async function capturePhotoStrip() {
         alert("Please wait for the camera to become ready.");
         return;
     }
+
+    const shotCount = getActiveShots();
 
     const countdown = Math.min(
         60,
@@ -1064,7 +1261,7 @@ async function capturePhotoStrip() {
     setControlsDisabled(true);
 
     try {
-        for (let i = 0; i < layout.shots; i++) {
+        for (let i = 0; i < shotCount; i++) {
             await showCountdown(countdown);
 
             triggerFlash();
@@ -1073,10 +1270,7 @@ async function capturePhotoStrip() {
             shots.push(captureFrame());
         }
 
-        const stripData = await createPhotoStrip(
-            selectedStripLayout,
-            shots
-        );
+        const stripData = await createPhotoStrip(shots);
 
         saveCapturedStrip(stripData);
 
@@ -1295,7 +1489,8 @@ updateFullscreenButton();
 
 restoreSettings();
 updateVideoFilter();
-applyLayoutAspect(selectedStripLayout);
+updateClassicPanel();
+restoreTemplate();
 restoreGallery();
 updateEmptyState();
 updateBatchButton();

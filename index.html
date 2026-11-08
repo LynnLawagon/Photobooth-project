@@ -100,31 +100,57 @@
                     </div>
 
                     <div class="strip-layout-section">
-                        <p class="strip-layout-label">Photo Strip Layout</p>
+                        <p class="strip-layout-label">Photo Strip Style</p>
 
-                        <div id="strip-layout-picker" class="strip-layout-picker">
+                        <!-- Strip style: Classic (background color) or My Template -->
+                        <div id="classic-options" class="layout-options">
+                            <div class="segmented" role="group" aria-label="Classic 4 style">
+                                <button type="button" class="seg active" data-mode="classic">Classic</button>
+                                <button type="button" class="seg" data-mode="custom">My Template</button>
+                            </div>
 
-                            <button type="button" class="strip-option active" data-layout="vertical-4" title="4 photos stacked vertically">
-                                <span class="strip-preview sp-vertical-4">
-                                    <i></i><i></i><i></i><i></i>
-                                </span>
-                                <span>Classic 4</span>
-                            </button>
+                            <div id="classic-bg-panel" class="option-panel">
+                                <p class="mini-label">Strip background</p>
+                                <div class="swatch-row">
+                                    <button type="button" class="swatch active" data-color="#f6f0e3" title="Cream" style="--c:#f6f0e3"></button>
+                                    <button type="button" class="swatch" data-color="#ffffff" title="White" style="--c:#ffffff"></button>
+                                    <button type="button" class="swatch" data-color="#1f1b16" title="Black" style="--c:#1f1b16"></button>
+                                    <button type="button" class="swatch" data-color="#f4c9d0" title="Blush" style="--c:#f4c9d0"></button>
+                                    <button type="button" class="swatch" data-color="#bfdcf2" title="Sky" style="--c:#bfdcf2"></button>
+                                    <button type="button" class="swatch" data-color="#c5d8b8" title="Sage" style="--c:#c5d8b8"></button>
+                                    <button type="button" class="swatch" data-color="#f7e08a" title="Butter" style="--c:#f7e08a"></button>
+                                    <label class="swatch-custom" title="Pick any color">
+                                        <input type="color" id="bg-color" value="#f6f0e3" aria-label="Custom background color">
+                                        <span>Custom</span>
+                                    </label>
+                                </div>
+                            </div>
 
-                            <button type="button" class="strip-option" data-layout="polaroid-1" title="Single photo with a Polaroid-style frame">
-                                <span class="strip-preview sp-polaroid-1">
-                                    <i></i><i></i>
-                                </span>
-                                <span>Polaroid</span>
-                            </button>
+                            <div id="custom-template-panel" class="option-panel hidden">
+                                <input type="file" id="template-file" accept="image/png,image/webp" hidden>
 
-                            <button type="button" class="strip-option" data-layout="brick-4" title="4 photos in a toy-brick frame">
-                                <span class="strip-preview sp-brick-4">
-                                    <i></i><i></i><i></i><i></i>
-                                </span>
-                                <span>AWKND</span>
-                            </button>
+                                <div id="template-drop" class="template-drop">
+                                    <button id="template-upload-btn" class="btn btn-small" type="button">⬆ Upload template</button>
+                                    <span class="hint">or drop a PNG here</span>
+                                </div>
 
+                                <div id="template-info" class="template-info hidden">
+                                    <canvas id="template-preview" aria-label="Template preview with numbered photo spots"></canvas>
+                                    <div class="template-meta">
+                                        <strong id="template-name"></strong>
+                                        <span id="template-slots"></span>
+                                        <button id="template-remove-btn" class="btn btn-small btn-ghost" type="button">Remove</button>
+                                    </div>
+                                </div>
+
+                                <p id="template-error" class="template-error hidden" role="alert"></p>
+
+                                <p class="hint">
+                                    Use a regular photostrip PNG with the photo spots left empty
+                                    (transparent), like an unfilled Canva or Photoshop template.
+                                    Photos fill the spots in numbered order.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -169,7 +195,7 @@
         </main>
     </div>
 
-    <script src="brick-template.js"></script>
+    <script src="custom-template.js"></script>
     <script src="script.js"></script>
 </body>
 </html>

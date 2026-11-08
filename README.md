@@ -6,9 +6,8 @@ A web-based photobooth experience with a live camera preview, vintage-style filt
 
 - Live camera feed with camera switching and mirrored viewing
 - Countdown timer before each capture
-- Two strip layouts:
-  - Classic 4-photo strip
-  - Polaroid-style single frame
+- Photo strip styles:
+  - Classic 4-photo strip, with a choice of **Classic** (pick any background color) or **My Template** (upload your own photostrip)
 - Film-style filters including grayscale, sepia, noir, vintage, vivid, cool, warm, and dreamy
 - Flash and shutter sound effects for a playful photobooth feel
 - Gallery of captured images with preview, delete, select, and batch download options
@@ -43,10 +42,16 @@ Open http://localhost:3000 in your browser and allow camera access when prompted
 ### Capture a Strip
 
 1. Choose your camera and filter.
-2. Pick a strip layout.
-3. Set the timer delay (use 0 for instant capture).
-4. Click Start Strip.
-5. Pose for each countdown and let the app build your strip.
+2. Set the timer delay (use 0 for instant capture).
+3. Click Start Strip.
+4. Pose for each countdown and let the app build your strip.
+
+### Use Your Own Template
+
+1. Under Photo Strip Style, choose **My Template**.
+2. Upload (or drag in) a PNG/WebP photostrip whose photo spots are empty, meaning transparent, like an unfilled Canva or Photoshop template.
+3. The app finds the spots automatically (1 to 8, in reading order) and shows them numbered. Each capture takes one photo per spot.
+4. Photos go underneath your template, so its frames, borders, and stickers stay on top. The template is remembered in your browser.
 
 ### View and Save Photos
 
@@ -62,6 +67,7 @@ photobooth-project/
 ├── index.html       # Main UI and modal preview markup
 ├── style.css        # Styling for the app, gallery, and preview popup
 ├── script.js        # Camera, filters, strip creation, and gallery logic
+├── custom-template.js # Custom template spot detection and compositing
 ├── server.js        # Express static file server
 └── package.json
 `
