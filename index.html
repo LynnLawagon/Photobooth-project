@@ -58,20 +58,29 @@
     <div class="container" id="app-container">
         <div class="booth">
 
-            <!-- LIGHTBOX SIGN -->
+            <!-- LIGHTBOX SIGN, ringed with chasing bulbs -->
             <header class="sign">
-                <span class="sign-small">say cheese &amp;</span>
-                <h1>PHOTOBOOTH</h1>
-                <span class="sign-print">Every photo comes out sharp and clear</span>
+                <div class="bulb-row" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
 
-                <button
-                    id="fullscreen-btn"
-                    class="icon-btn"
-                    type="button"
-                    title="Enter fullscreen"
-                    aria-label="Enter fullscreen">
-                    ⛶
-                </button>
+                <div class="bulb-col bulb-left" aria-hidden="true"><span></span><span></span><span></span></div>
+                <div class="bulb-col bulb-right" aria-hidden="true"><span></span><span></span><span></span></div>
+
+                <div class="sign-face">
+                    <span class="sign-small">say cheese &amp;</span>
+                    <h1>PHOTOBOOTH</h1>
+                    <span class="sign-print">Every photo comes out sharp and clear</span>
+
+                    <button
+                        id="fullscreen-btn"
+                        class="icon-btn"
+                        type="button"
+                        title="Enter fullscreen"
+                        aria-label="Enter fullscreen">
+                        ⛶
+                    </button>
+                </div>
+
+                <div class="bulb-row" aria-hidden="true"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div>
             </header>
 
             <main class="face">

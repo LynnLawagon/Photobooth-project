@@ -116,19 +116,102 @@ button {
     position: relative;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    gap: 2px;
+    gap: 7px;
     width: min(100%, 600px);
     margin: 0 auto 22px;
-    padding: 8px 12px 10px;
-    border: 3px solid #1d1a16;
-    border-radius: 6px;
-    background: linear-gradient(180deg, #fffdf5, #f1e9d0);
-    color: var(--ink);
+    padding: 9px 22px;
+    border-radius: 10px;
+    background: #14110f;
     box-shadow:
         0 0 0 2px var(--chrome-dark),
-        0 0 46px rgba(255, 236, 170, 0.5);
+        0 0 0 4px var(--chrome),
+        0 0 46px rgba(255, 220, 140, 0.4);
+}
+
+.sign-face {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 8px 12px 10px;
+    border-radius: 5px;
+    background: linear-gradient(180deg, #fffdf5, #f1e9d0);
+    color: var(--ink);
     animation: sign-on 1.1s steps(1, end) 1;
+}
+
+/* Bulbs around the lightbox */
+
+.bulb-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 0 4px;
+}
+
+.bulb-col {
+    position: absolute;
+    top: 22px;
+    bottom: 22px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-around;
+}
+
+.bulb-left  { left: 7px; }
+.bulb-right { right: 7px; }
+
+.bulb-row span,
+.bulb-col span {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--bulb);
+    opacity: 0.35;
+    animation: chase 2.4s ease-in-out infinite;
+}
+
+.bulb-row span:nth-child(1)  { animation-delay: 0s; }
+.bulb-row span:nth-child(2)  { animation-delay: 0.1s; }
+.bulb-row span:nth-child(3)  { animation-delay: 0.2s; }
+.bulb-row span:nth-child(4)  { animation-delay: 0.3s; }
+.bulb-row span:nth-child(5)  { animation-delay: 0.4s; }
+.bulb-row span:nth-child(6)  { animation-delay: 0.5s; }
+.bulb-row span:nth-child(7)  { animation-delay: 0.6s; }
+.bulb-row span:nth-child(8)  { animation-delay: 0.7s; }
+.bulb-row span:nth-child(9)  { animation-delay: 0.8s; }
+.bulb-row span:nth-child(10) { animation-delay: 0.9s; }
+.bulb-row span:nth-child(11) { animation-delay: 1s; }
+.bulb-row span:nth-child(12) { animation-delay: 1.1s; }
+
+/* the bottom row runs the other way so the lights seem to circle the sign */
+.sign .bulb-row:last-child span:nth-child(1)  { animation-delay: 1.1s; }
+.sign .bulb-row:last-child span:nth-child(2)  { animation-delay: 1s; }
+.sign .bulb-row:last-child span:nth-child(3)  { animation-delay: 0.9s; }
+.sign .bulb-row:last-child span:nth-child(4)  { animation-delay: 0.8s; }
+.sign .bulb-row:last-child span:nth-child(5)  { animation-delay: 0.7s; }
+.sign .bulb-row:last-child span:nth-child(6)  { animation-delay: 0.6s; }
+.sign .bulb-row:last-child span:nth-child(7)  { animation-delay: 0.5s; }
+.sign .bulb-row:last-child span:nth-child(8)  { animation-delay: 0.4s; }
+.sign .bulb-row:last-child span:nth-child(9)  { animation-delay: 0.3s; }
+.sign .bulb-row:last-child span:nth-child(10) { animation-delay: 0.2s; }
+.sign .bulb-row:last-child span:nth-child(11) { animation-delay: 0.1s; }
+.sign .bulb-row:last-child span:nth-child(12) { animation-delay: 0s; }
+
+.bulb-left span:nth-child(1),  .bulb-right span:nth-child(3) { animation-delay: 1.2s; }
+.bulb-left span:nth-child(2),  .bulb-right span:nth-child(2) { animation-delay: 1.3s; }
+.bulb-left span:nth-child(3),  .bulb-right span:nth-child(1) { animation-delay: 1.4s; }
+
+@keyframes chase {
+    0%, 50%, 100% {
+        opacity: 0.35;
+        box-shadow: none;
+    }
+
+    18% {
+        opacity: 1;
+        box-shadow: 0 0 9px 3px var(--bulb-glow);
+    }
 }
 
 /* the stem that holds the sign above the booth */
@@ -175,17 +258,17 @@ h1 {
 
 .icon-btn {
     position: absolute;
-    top: 6px;
-    right: 6px;
-    width: 32px;
-    height: 32px;
+    top: 4px;
+    right: 4px;
+    width: 28px;
+    height: 28px;
     display: grid;
     place-items: center;
     border: 1.5px solid #1d1a16;
     border-radius: 8px;
     background: #fffaf0;
     color: var(--ink);
-    font-size: 1.1rem;
+    font-size: 0.95rem;
     cursor: pointer;
 }
 
@@ -1196,8 +1279,18 @@ input:disabled {
     }
 
     .sign {
-        padding: 8px 56px 10px;
         margin-bottom: 18px;
+        padding: 10px 26px;
+    }
+
+    .sign-face {
+        padding: 8px 56px 10px;
+    }
+
+    .bulb-row span,
+    .bulb-col span {
+        width: 9px;
+        height: 9px;
     }
 
     .icon-btn {
@@ -1358,14 +1451,20 @@ input:disabled {
     }
 
     .sign {
+        margin-bottom: 8px;
+        padding: 5px 12px;
+    }
+
+    .sign-face {
         flex-direction: row;
         justify-content: center;
         align-items: baseline;
         gap: 10px;
-        margin-bottom: 8px;
-        padding: 4px 48px;
+        padding: 3px 48px;
     }
 
+    .sign .bulb-row,
+    .sign .bulb-col,
     .sign-small,
     .sign-print {
         display: none;
@@ -1466,8 +1565,14 @@ html:fullscreen body {
 /* ── REDUCED MOTION ──────────────────────────── */
 
 @media (prefers-reduced-motion: reduce) {
-    .sign {
+    .sign-face {
         animation: none;
+    }
+
+    .bulb-row span,
+    .bulb-col span {
+        animation: none;
+        opacity: 1;
     }
 
     * {
