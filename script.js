@@ -517,6 +517,12 @@ const zoomOutBtn = document.getElementById("zoom-out-btn");
 const zoomResetBtn = document.getElementById("zoom-reset-btn");
 const appContainer = document.getElementById("app-container");
 
+const timerDownBtn = document.getElementById("timer-down");
+const timerUpBtn = document.getElementById("timer-up");
+const settingsToggle = document.getElementById("settings-toggle");
+const settingsPanel = document.getElementById("settings-panel");
+const settingsSummary = document.getElementById("settings-summary");
+
 const classicOptions = document.getElementById("classic-options");
 const classicBgPanel = document.getElementById("classic-bg-panel");
 const customTemplatePanel = document.getElementById("custom-template-panel");
@@ -910,6 +916,7 @@ function updateClassicPanel() {
 
     updateTemplateInfo();
     applyLayoutAspect();
+    updateSettingsSummary();
 }
 
 function setClassicBg(color) {
@@ -1388,6 +1395,7 @@ function updateVideoFilter() {
 
 filterSelect.addEventListener("change", () => {
     updateVideoFilter();
+    updateSettingsSummary();
     saveSettings();
 });
 
@@ -1405,6 +1413,7 @@ function applyLayoutAspect() {
     const aspect = getActiveAspect();
 
     videoWrapper.style.aspectRatio = String(aspect);
+    document.documentElement.style.setProperty("--aspect", String(aspect));
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -1451,9 +1460,11 @@ function triggerFlash() {
     if (!flashOverlay) return;
 
     flashOverlay.classList.add("flash-active");
+    document.body.classList.add("flashing");
 
     setTimeout(() => {
         flashOverlay.classList.remove("flash-active");
+        document.body.classList.remove("flashing");
     }, 150);
 }
 
@@ -1489,6 +1500,8 @@ function showCountdown(seconds) {
 function setControlsDisabled(disabled) {
     stripBtn.disabled = disabled;
     timerInput.disabled = disabled;
+    timerDownBtn.disabled = disabled;
+    timerUpBtn.disabled = disabled;
     cameraSelect.disabled = disabled;
     filterSelect.disabled = disabled;
 
@@ -1728,8 +1741,8 @@ function updateEmptyState() {
     sessionEmpty.classList.toggle("hidden", hasPhotos);
 
     sessionEmpty.textContent = hasPhotos
-        ? "Select photos to download or remove them."
-        : "Your photos will appear here.";
+        ? "Select strips to download or remove them."
+        : "Your strips come out here.";
 }
 
 function setPreviewZoom(level) {
@@ -2214,6 +2227,37 @@ updateFullscreenButton();
 // ═══════════════════════════════════════════════════════════════════════════
 // INITIALIZE APPLICATION
 // ═══════════════════════════════════════════════════════════════════════════
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOTH CONTROLS: countdown stepper + collapsible settings (phones)
+// ═══════════════════════════════════════════════════════════════════════════
+
+function nudgeTimer(delta) {
+    const min = Number(timerInput.min) || 0;
+    const max = Number(timerInput.max) || 60;
+    const current = Number(timerInput.value);
+
+    const next = Math.min(max, Math.max(min, (Number.isFinite(current) ? current : 3) + delta));
+
+    timerInput.value = String(next);
+    timerInput.dispatchEvent(new Event("change", { bubbles: true }));
+}
+
+timerDownBtn.addEventListener("click", () => nudgeTimer(-1));
+timerUpBtn.addEventListener("click", () => nudgeTimer(1));
+
+function updateSettingsSummary() {
+    const style = classicMode === "custom" ? "My template" : "Classic";
+    const filter = filterSelect.options[filterSelect.selectedIndex]?.text || "";
+
+    settingsSummary.textContent = filter ? `${style} · ${filter}` : style;
+}
+
+settingsToggle.addEventListener("click", () => {
+    const open = settingsPanel.classList.toggle("open");
+
+    settingsToggle.setAttribute("aria-expanded", String(open));
+});
 
 restoreSettings();
 updateVideoFilter();

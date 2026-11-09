@@ -2,29 +2,31 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#ede4d3">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="theme-color" content="#0b1412">
     <title>Say Cheese — Vintage Photobooth</title>
 
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=Special+Elite&family=Caveat:wght@600&family=Fredoka:wght@700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Special+Elite&display=swap" rel="stylesheet">
 
-    <link rel="stylesheet" href="style.css?v=4">
+    <link rel="stylesheet" href="style.css?v=5">
 </head>
 <body>
     <div id="flash-overlay" aria-hidden="true"></div>
 
+    <!-- Strip preview -->
     <div id="image-preview-modal" class="hidden" aria-hidden="true">
         <div class="preview-backdrop"></div>
 
         <div class="preview-dialog" role="dialog" aria-modal="true" aria-label="Image preview">
             <div class="preview-toolbar">
-                <button id="zoom-out-btn" class="preview-tool" type="button">−</button>
+                <button id="zoom-out-btn" class="preview-tool" type="button" aria-label="Zoom out">−</button>
                 <button id="zoom-reset-btn" class="preview-tool" type="button">100%</button>
-                <button id="zoom-in-btn" class="preview-tool" type="button">+</button>
+                <button id="zoom-in-btn" class="preview-tool" type="button" aria-label="Zoom in">+</button>
             </div>
 
-            <button id="close-preview-btn" class="preview-close" type="button">×</button>
+            <button id="close-preview-btn" class="preview-close" type="button" aria-label="Close preview">×</button>
 
             <div class="preview-image-frame">
                 <img id="preview-image" alt="Preview">
@@ -54,31 +56,30 @@
     </div>
 
     <div class="container" id="app-container">
+        <div class="booth">
 
-        <header class="app-header">
-            <div class="bulb-row" aria-hidden="true">
-                <span></span><span></span><span></span><span></span><span></span>
-                <span></span><span></span><span></span><span></span><span></span>
-            </div>
+            <!-- LIGHTBOX SIGN -->
+            <header class="sign">
+                <span class="sign-small">say cheese &amp;</span>
+                <h1>PHOTOBOOTH</h1>
+                <span class="sign-print">Every photo comes out sharp and clear</span>
 
-            <span class="script-tag">say cheese &amp;</span>
-            <h1>PHOTOBOOTH</h1>
+                <button
+                    id="fullscreen-btn"
+                    class="icon-btn"
+                    type="button"
+                    title="Enter fullscreen"
+                    aria-label="Enter fullscreen">
+                    ⛶
+                </button>
+            </header>
 
-            <button
-                id="fullscreen-btn"
-                class="icon-btn"
-                type="button"
-                title="Enter fullscreen"
-                aria-label="Enter fullscreen">
-                ⛶
-            </button>
-        </header>
+            <main class="face">
 
-        <main class="workspace-grid">
+                <!-- MIRROR: the camera, framed by the curtain -->
+                <section class="mirror" aria-label="Camera">
+                    <span class="lamp" aria-hidden="true"></span>
 
-            <!-- LEFT: CAMERA -->
-            <div class="left-column">
-                <section class="camera-section">
                     <div class="camera-frame">
                         <div class="video-wrapper">
                             <video id="video" autoplay muted playsinline></video>
@@ -89,136 +90,163 @@
                         </div>
                     </div>
                 </section>
-            </div>
 
-            <!-- RIGHT: SETTINGS AND GALLERY -->
-            <div class="right-column">
+                <!-- INSTRUCTION PLAQUE: the controls -->
+                <aside class="plaque" aria-label="Controls">
 
-                <section class="sidebar-controls">
+                    <button
+                        id="settings-toggle"
+                        class="settings-toggle"
+                        type="button"
+                        aria-expanded="false"
+                        aria-controls="settings-panel">
+                        <span class="settings-toggle-text">
+                            <span>Look and style</span>
+                            <small id="settings-summary">Classic · Vintage</small>
+                        </span>
+                        <span class="chevron" aria-hidden="true"></span>
+                    </button>
 
-                    <div class="camera-options">
-                        <label class="option-label">
-                            Camera
-                            <select id="camera-select">
-                                <option value="">Loading cameras...</option>
-                            </select>
-                        </label>
+                    <div id="settings-panel" class="settings-panel">
 
-                        <label class="option-label">
-                            Film Filter
-                            <select id="filter-select">
-                                <option value="none">Original</option>
-                                <option value="grayscale">Black &amp; White</option>
-                                <option value="sepia">Sepia</option>
-                                <option value="noir">Noir</option>
-                                <option value="vintage" selected>Vintage</option>
-                                <option value="vivid">Vivid</option>
-                                <option value="cool">Cool Tone</option>
-                                <option value="warm">Warm Tone</option>
-                                <option value="dreamy">Dreamy</option>
-                            </select>
-                        </label>
-                    </div>
+                        <h2 class="step-title"><span class="step-num">1</span>Choose your look</h2>
 
-                    <div class="strip-layout-section">
-                        <p class="strip-layout-label">Photo Strip Style</p>
+                        <div class="camera-options">
+                            <label class="option-label">
+                                Camera
+                                <select id="camera-select">
+                                    <option value="">Loading cameras...</option>
+                                </select>
+                            </label>
 
-                        <!-- Strip style: Classic (background color) or My Template -->
-                        <div id="classic-options" class="layout-options">
-                            <div class="segmented" role="group" aria-label="Classic 4 style">
-                                <button type="button" class="seg active" data-mode="classic">Classic</button>
-                                <button type="button" class="seg" data-mode="custom">My Template</button>
-                            </div>
+                            <label class="option-label">
+                                Film filter
+                                <select id="filter-select">
+                                    <option value="none">Original</option>
+                                    <option value="grayscale">Black &amp; White</option>
+                                    <option value="sepia">Sepia</option>
+                                    <option value="noir">Noir</option>
+                                    <option value="vintage" selected>Vintage</option>
+                                    <option value="vivid">Vivid</option>
+                                    <option value="cool">Cool Tone</option>
+                                    <option value="warm">Warm Tone</option>
+                                    <option value="dreamy">Dreamy</option>
+                                </select>
+                            </label>
+                        </div>
 
-                            <div id="classic-bg-panel" class="option-panel">
-                                <p class="mini-label">Strip background</p>
-                                <div class="swatch-row">
-                                    <button type="button" class="swatch active" data-color="#f6f0e3" title="Cream" style="--c:#f6f0e3"></button>
-                                    <button type="button" class="swatch" data-color="#ffffff" title="White" style="--c:#ffffff"></button>
-                                    <button type="button" class="swatch" data-color="#1f1b16" title="Black" style="--c:#1f1b16"></button>
-                                    <button type="button" class="swatch" data-color="#f4c9d0" title="Blush" style="--c:#f4c9d0"></button>
-                                    <button type="button" class="swatch" data-color="#bfdcf2" title="Sky" style="--c:#bfdcf2"></button>
-                                    <button type="button" class="swatch" data-color="#c5d8b8" title="Sage" style="--c:#c5d8b8"></button>
-                                    <button type="button" class="swatch" data-color="#f7e08a" title="Butter" style="--c:#f7e08a"></button>
-                                    <label class="swatch-custom" title="Pick any color">
-                                        <input type="color" id="bg-color" value="#f6f0e3" aria-label="Custom background color">
-                                        <span>Custom</span>
-                                    </label>
-                                </div>
-                            </div>
+                        <div class="strip-layout-section">
+                            <p class="strip-layout-label">Photo strip style</p>
 
-                            <div id="custom-template-panel" class="option-panel hidden">
-                                <input type="file" id="template-file" accept="image/png,image/webp,image/jpeg" hidden>
-
-                                <div id="template-drop" class="template-drop">
-                                    <button id="template-upload-btn" class="btn btn-small" type="button">⬆ Upload template</button>
-                                    <span class="hint">or drop an image here</span>
+                            <!-- Strip style: Classic (background color) or My Template -->
+                            <div id="classic-options" class="layout-options">
+                                <div class="segmented" role="group" aria-label="Strip style">
+                                    <button type="button" class="seg active" data-mode="classic">Classic</button>
+                                    <button type="button" class="seg" data-mode="custom">My Template</button>
                                 </div>
 
-                                <div id="template-info" class="template-info hidden">
-                                    <canvas id="template-preview" aria-label="Template preview with numbered photo spots"></canvas>
-                                    <div class="template-meta">
-                                        <strong id="template-name"></strong>
-                                        <span id="template-slots"></span>
-                                        <div class="template-buttons">
-                                            <button id="template-adjust-btn" class="btn btn-small" type="button">✎ Adjust spots</button>
-                                            <button id="template-remove-btn" class="btn btn-small btn-ghost" type="button">Remove</button>
-                                        </div>
+                                <div id="classic-bg-panel" class="option-panel">
+                                    <p class="mini-label">Strip background</p>
+                                    <div class="swatch-row">
+                                        <button type="button" class="swatch active" data-color="#f6f0e3" title="Cream" aria-label="Cream" style="--c:#f6f0e3"></button>
+                                        <button type="button" class="swatch" data-color="#ffffff" title="White" aria-label="White" style="--c:#ffffff"></button>
+                                        <button type="button" class="swatch" data-color="#1f1b16" title="Black" aria-label="Black" style="--c:#1f1b16"></button>
+                                        <button type="button" class="swatch" data-color="#f4c9d0" title="Blush" aria-label="Blush" style="--c:#f4c9d0"></button>
+                                        <button type="button" class="swatch" data-color="#bfdcf2" title="Sky" aria-label="Sky" style="--c:#bfdcf2"></button>
+                                        <button type="button" class="swatch" data-color="#c5d8b8" title="Sage" aria-label="Sage" style="--c:#c5d8b8"></button>
+                                        <button type="button" class="swatch" data-color="#f7e08a" title="Butter" aria-label="Butter" style="--c:#f7e08a"></button>
+                                        <label class="swatch-custom" title="Pick any color">
+                                            <input type="color" id="bg-color" value="#f6f0e3" aria-label="Custom background color">
+                                            <span>Custom</span>
+                                        </label>
                                     </div>
                                 </div>
 
-                                <p id="template-error" class="template-error hidden" role="alert"></p>
+                                <div id="custom-template-panel" class="option-panel hidden">
+                                    <input type="file" id="template-file" accept="image/png,image/webp,image/jpeg" hidden>
 
-                                <p class="hint">
-                                    Upload a photostrip exported from Canva or any PNG with empty,
-                                    see-through photo spots. Photos fill the spots in numbered order.
-                                    Spots not found? You can mark them yourself.
-                                </p>
+                                    <div id="template-drop" class="template-drop">
+                                        <button id="template-upload-btn" class="btn btn-small" type="button">⬆ Upload template</button>
+                                        <span class="hint">or drop an image here</span>
+                                    </div>
+
+                                    <div id="template-info" class="template-info hidden">
+                                        <canvas id="template-preview" aria-label="Template preview with numbered photo spots"></canvas>
+                                        <div class="template-meta">
+                                            <strong id="template-name"></strong>
+                                            <span id="template-slots"></span>
+                                            <div class="template-buttons">
+                                                <button id="template-adjust-btn" class="btn btn-small" type="button">✎ Adjust spots</button>
+                                                <button id="template-remove-btn" class="btn btn-small btn-ghost" type="button">Remove</button>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <p id="template-error" class="template-error hidden" role="alert"></p>
+
+                                    <p class="hint">
+                                        Upload a photostrip exported from Canva (the sample sky-and-hills
+                                        pictures get replaced automatically) or any PNG with empty,
+                                        see-through photo spots. Photos fill the spots in numbered order.
+                                        Spots not found? You can mark them yourself.
+                                    </p>
+                                </div>
                             </div>
                         </div>
                     </div>
 
-                    <div class="controls">
-                        <label class="timer-label">
-                            Timer (sec)
-                            <input type="number" id="timer" min="0" max="60" value="3">
-                        </label>
+                    <!-- The two controls you use every time stay in reach -->
+                    <div class="dock">
+                        <div class="dock-timer">
+                            <label class="step-title" for="timer"><span class="step-num">2</span>Set the countdown</label>
 
-                        <button id="strip-btn" class="btn btn-secondary" type="button">
-                            🎞️ Start Strip
-                        </button>
+                            <div class="stepper">
+                                <button id="timer-down" class="stepper-btn" type="button" aria-label="Shorter countdown">−</button>
+                                <input type="number" id="timer" min="0" max="60" value="3" inputmode="numeric" aria-label="Countdown in seconds">
+                                <button id="timer-up" class="stepper-btn" type="button" aria-label="Longer countdown">+</button>
+                                <span class="unit">sec</span>
+                            </div>
+                        </div>
+
+                        <div class="dock-go">
+                            <p class="step-title"><span class="step-num">3</span>Press when ready</p>
+
+                            <button id="strip-btn" class="btn btn-start" type="button">
+                                <span class="lens" aria-hidden="true"></span>
+                                <span>Start strip</span>
+                            </button>
+                        </div>
                     </div>
+                </aside>
 
-                </section>
+            <!-- OUTPUT SLOT: strips drop into this tray -->
+            <section class="tray" aria-label="Your strips">
+                <div class="tray-head">
+                    <h3>Your strips</h3>
+                    <button id="select-all-btn" class="btn btn-small btn-chrome" type="button">Select all</button>
+                </div>
 
-                <!-- SESSION GALLERY -->
-                <section class="gallery-section">
-
-                    <div class="section-header">
-                        <h3>Session Gallery</h3>
-                        <button id="select-all-btn" class="btn btn-small" type="button">
-                            Select All
-                        </button>
-                    </div>
+                <div class="tray-body">
+                    <div class="slot" aria-hidden="true"></div>
 
                     <div class="gallery-scroll-area">
                         <p id="session-empty" class="empty-message">
-                            Your photos will appear here.
+                            Your strips come out here.
                         </p>
 
                         <div id="gallery"></div>
                     </div>
+                </div>
 
-                    <button id="batch-save-btn" class="batch-save-btn hidden" type="button">
-                        💾 Download Selected Images
-                    </button>
+                <button id="batch-save-btn" class="batch-save-btn hidden" type="button">
+                    💾 Download selected strips
+                </button>
+            </section>
+            </main>
 
-                </section>
-            </div>
-
-        </main>
+        </div>
     </div>
 
-    <script src="script.js?v=4"></script>
+    <script src="script.js?v=5"></script>
 </body>
 </html>

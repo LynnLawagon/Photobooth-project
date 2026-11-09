@@ -46,6 +46,10 @@ Open http://localhost:3000 in your browser and allow camera access when prompted
 3. Click Start Strip.
 4. Pose for each countdown and let the app build your strip.
 
+### Layout
+
+The app is laid out like a real photobooth. On wide screens the instruction panel is on the left, the curtain and camera in the middle, and the output slot on the right. On phones it stacks: camera first, one tap for look and style, and the Start button docked at the bottom edge for your thumb. Sideways phones and tablets get their own layouts.
+
 ### Use Your Own Template
 
 1. Under Photo Strip Style, choose **My Template**.
